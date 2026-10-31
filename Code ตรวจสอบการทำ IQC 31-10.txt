@@ -1,0 +1,1074 @@
+// กำหนด ID ของ Google Sheets สำหรับใช้งานในระบบ google sheet "LabNamphong" App Script "LabNamphong_01"
+var PARENT_SHEET_ID = '17on-TskFeaGBkLrEDZTqGuhodobEAS8j3lHRIONg87s';
+var CHILD_SHEET_ID = '17on-TskFeaGBkLrEDZTqGuhodobEAS8j3lHRIONg87s';
+
+/**
+ * ฟังก์ชันหลักสำหรับแสดงผลหน้าเว็บเมื่อมีผู้เรียกใช้งาน Web App IQC EQA
+ */
+function doGet(e) {
+  var htmlOutput = HtmlService.createTemplateFromFile('index').evaluate();
+  htmlOutput.setTitle('กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลน้ำพอง');
+  htmlOutput.addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  htmlOutput.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return htmlOutput;
+}
+
+/**
+ * ฟังก์ชันดึงโครงสร้างรายการตรวจทั้งหมดจากชีต TestList และแปลงเป็น Object Map จัดกลุ่มตามสาขา
+ */
+function getTestListMap() {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(PARENT_SHEET_ID);
+    var sheet = spreadsheet.getSheetByName('TestList');
+
+    if (!sheet) {
+      return { status: "error", message: "ไม่พบแผ่นงานชื่อ 'TestList' ในระบบชีตหลัก" };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      return { status: "success", data: {} };
+    }
+
+    var headers = data[0];
+    var sectionColIdx = headers.indexOf("สาขา");
+    var testColIdx = headers.indexOf("รายการตรวจ");
+
+    // ตั้งค่าคอลัมน์เริ่มต้นกรณีระบุชื่อหัวตารางไม่ตรง
+    if (sectionColIdx === -1) sectionColIdx = 0;
+    if (testColIdx === -1) testColIdx = 1;
+
+    var map = {};
+    for (var i = 1; i < data.length; i++) {
+      var section = String(data[i][sectionColIdx]).trim();
+      var test = String(data[i][testColIdx]).trim();
+
+      if (section && test) {
+        if (!map[section]) {
+          map[section] = [];
+        }
+        // ตรวจสอบข้อมูลซ้ำก่อนเพิ่มลงในอาร์เรย์
+        if (map[section].indexOf(test) === -1) {
+          map[section].push(test);
+        }
+      }
+    }
+    return { status: "success", data: map };
+  } catch (error) {
+    return { status: "error", message: "เกิดข้อผิดพลาดในการดึงรายการตรวจ: " + error.toString() };
+  }
+}
+
+/**
+ * ฟังก์ชันดึงโครงสร้างรายการตรวจของ EQA จากชีต EQA_TestList
+ * คาดหวังหัวตาราง: "EQA Program" (หรือคอลัมน์ A) และ "รายการตรวจ" (หรือคอลัมน์ B)
+ * ค่าใน "EQA Program" ต้องตรงกับ <option value="..."> ของ select#eqaProgram ใน index.html
+ * เช่น Hematology_CBC, Hematology_Coag, Chemistry, Immunology, Microscopy, Microbiology, Blood bank
+ */
+function getEqaTestListMap() {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(PARENT_SHEET_ID);
+    var sheet = spreadsheet.getSheetByName('EQA_TestList');
+
+    if (!sheet) {
+      return { status: "error", message: "ไม่พบแผ่นงานชื่อ 'EQA_TestList' ในระบบชีตหลัก" };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      return { status: "success", data: {} };
+    }
+
+    var headers = data[0];
+    var programColIdx = headers.indexOf("EQA_Program");
+    var testColIdx = headers.indexOf("EQA_Test");
+
+    if (programColIdx === -1) programColIdx = 0;
+    if (testColIdx === -1) testColIdx = 1;
+
+    var map = {};
+    for (var i = 1; i < data.length; i++) {
+      var program = String(data[i][programColIdx]).trim();
+      var test = String(data[i][testColIdx]).trim();
+
+      if (program && test) {
+        if (!map[program]) {
+          map[program] = [];
+        }
+        if (map[program].indexOf(test) === -1) {
+          map[program].push(test);
+        }
+      }
+    }
+    return { status: "success", data: map };
+  } catch (error) {
+    return { status: "error", message: "เกิดข้อผิดพลาดในการดึงรายการตรวจ EQA: " + error.toString() };
+  }
+}
+
+/**
+ * ฟังก์ชันค้นหาชื่อผู้ปฏิบัติงานจากแผ่นงาน Personel
+ * โดยเทียบรหัสผู้ปฏิบัติ (2 ตัวท้าย) กับ "เลขที่ใบประกอบวิชาชีพ" (2 ตัวท้าย)
+ * ใช้ร่วมกันทั้งหน้า IQC (operatorId) และหน้า EQA (reviewerId / headId)
+ * @param {string} operatorId รหัสที่ผู้ใช้ป้อนเข้ามา (เลข 2 หลัก)
+ */
+function findOperatorName(operatorId) {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(PARENT_SHEET_ID);
+    var sheet = spreadsheet.getSheetByName('Personel');
+
+    if (!sheet) {
+      return { status: "error", message: "ไม่พบแผ่นงานชื่อ 'Personel' ในระบบ กรุณาสร้างแผ่นงานนี้ในชีตหลัก" };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      return { status: "error", message: "ไม่พบข้อมูลรายชื่อบุคลากรในแผ่นงาน Personel" };
+    }
+
+    var headers = data[0];
+    var licenseColIdx = headers.indexOf("เลขที่ใบประกอบวิชาชีพ");
+    var nameColIdx = headers.indexOf("ชื่อ");
+
+    // หากไม่พบคอลัมน์ตามชื่อที่ระบุ ให้ใช้ค่า Default (A=ใบประกอบวิชาชีพ, B=ชื่อ)
+    if (licenseColIdx === -1) licenseColIdx = 0;
+    if (nameColIdx === -1) nameColIdx = 1;
+
+    var searchId = String(operatorId).trim();
+
+    for (var i = 1; i < data.length; i++) {
+      var licenseNum = String(data[i][licenseColIdx]).trim();
+      var fullName = String(data[i][nameColIdx]).trim();
+
+      if (licenseNum.length >= 2) {
+        // ดึงเฉพาะเลข 2 ตัวท้ายของใบประกอบวิชาชีพมาเปรียบเทียบ
+        var lastTwoDigits = licenseNum.substring(licenseNum.length - 2);
+        if (lastTwoDigits === searchId) {
+          return { status: "success", name: fullName };
+        }
+      }
+    }
+
+    return { status: "not_found", message: "ไม่พบข้อมูลผู้ปฏิบัติงานรหัสนี้ในระบบชีต" };
+  } catch (error) {
+    return { status: "error", message: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล: " + error.toString() };
+  }
+}
+
+/**
+ * ฟังก์ชันดึงข้อมูลสรุปผล IQC ทั้งหมดมาแสดงใน Dashboard
+ * โดยเชื่อมโยง IQC_Child เข้ากับ IQC_Parent และเรียงลำดับวันที่จากล่าสุดลงมา
+ */
+function getIqcDashboardData() {
+  try {
+    var parentSheet = SpreadsheetApp.openById(PARENT_SHEET_ID).getSheetByName('IQC_Parent');
+    var childSheet = SpreadsheetApp.openById(CHILD_SHEET_ID).getSheetByName('IQC_Child');
+
+    if (!parentSheet || !childSheet) {
+      return { status: "error", message: "ไม่พบแผ่นงาน IQC_Parent หรือ IQC_Child ใน Google Sheets" };
+    }
+
+    var parentData = parentSheet.getDataRange().getValues();
+    var childData = childSheet.getDataRange().getValues();
+
+    if (parentData.length <= 1 || childData.length <= 1) {
+      return { status: "success", data: [] };
+    }
+
+    // แปลงข้อมูล Parent เป็น Map โดยมี parentId เป็น Key
+    // Headers ของ Parent: [operatorId, operatorName, parentId, recordDate, shift, section, machine]
+    var parentMap = {};
+    for (var i = 1; i < parentData.length; i++) {
+      var row = parentData[i];
+      var pId = String(row[2]).trim();
+      if (pId) {
+        var rawDate = row[3];
+        var formattedDate = "";
+        var timeVal = 0;
+
+        if (rawDate instanceof Date) {
+          formattedDate = Utilities.formatDate(rawDate, "GMT+7", "yyyy-MM-dd");
+          timeVal = rawDate.getTime();
+        } else if (rawDate) {
+          formattedDate = String(rawDate).trim();
+          var parsedDate = new Date(rawDate);
+          timeVal = isNaN(parsedDate.getTime()) ? 0 : parsedDate.getTime();
+        }
+
+        parentMap[pId] = {
+          operatorId: String(row[0] || ""),
+          operatorName: String(row[1] || ""),
+          recordDate: formattedDate,
+          timeVal: timeVal,
+          shift: String(row[4] || ""),
+          section: String(row[5] || ""),
+          machine: String(row[6] || "")
+        };
+      }
+    }
+
+    // Headers ของ Child: [childId, parentId, testItem, westgard, numControl, errorType, reagentStatus, controlStatus, standardStatus, instrumentStatus, rootCause, correction, result]
+    var resultList = [];
+    for (var j = 1; j < childData.length; j++) {
+      var cRow = childData[j];
+      var pId = String(cRow[1]).trim();
+      var pInfo = parentMap[pId] || { recordDate: "-", section: "-", machine: "-", timeVal: 0 };
+
+      resultList.push({
+        childId: String(cRow[0] || ""),
+        parentId: pId,
+        recordDate: pInfo.recordDate,
+        timeVal: pInfo.timeVal,
+        section: pInfo.section,
+        machine: pInfo.machine,
+        operatorName: pInfo.operatorName || "",
+        testItem: String(cRow[2] || ""),
+        westgard: String(cRow[3] || ""),
+        numControl: String(cRow[4] || ""),
+        errorType: String(cRow[5] || ""),
+        reagentStatus: String(cRow[6] || ""),
+        controlStatus: String(cRow[7] || ""),
+        standardStatus: String(cRow[8] || ""),
+        instrumentStatus: String(cRow[9] || ""),
+        rootCause: String(cRow[10] || ""),
+        correction: String(cRow[11] || ""),
+        result: String(cRow[12] || "")
+      });
+    }
+
+    // เรียงลำดับตามเวลาจากล่าสุดขึ้นบนสุด (Descending Order)
+    resultList.sort(function(a, b) {
+      return b.timeVal - a.timeVal;
+    });
+
+    return { status: "success", data: resultList };
+
+  } catch (error) {
+    return { status: "error", message: "เกิดข้อผิดพลาดในการดึงข้อมูล Dashboard: " + error.toString() };
+  }
+}
+
+/**
+ * ฟังก์ชันบันทึกข้อมูลแบบฟอร์ม IQC (ทั้ง Parent และ Children)
+ */
+function saveData(formObj) {
+  try {
+    var parentSheet = SpreadsheetApp.openById(PARENT_SHEET_ID).getSheetByName('IQC_Parent');
+    var childSheet = SpreadsheetApp.openById(CHILD_SHEET_ID).getSheetByName('IQC_Child');
+
+    if(!parentSheet) throw new Error("ไม่พบแผ่นงานชื่อ IQC_Parent");
+    if(!childSheet) throw new Error("ไม่พบแผ่นงานชื่อ IQC_Child");
+
+    // สร้าง ID อ้างอิงที่ไม่ซ้ำกันด้วย Timestamp
+    var dateObj = new Date();
+    var timestamp = Utilities.formatDate(dateObj, "GMT+7", "yyyyMMdd-HHmmss");
+    var parentId = "IQC-" + timestamp;
+    
+
+    parentSheet.appendRow([
+      formObj.parent.operatorId,
+      formObj.parent.operatorName,
+      parentId,
+      formObj.parent.recordDate,
+      formObj.parent.shift,
+      formObj.parent.section,
+      formObj.parent.machine
+     ]);
+
+    var childDataRows = [];
+    for (var i = 0; i < formObj.children.length; i++) {
+      var item = formObj.children[i];
+      var childId = parentId + "-C" + (i + 1);
+
+      childDataRows.push([
+        childId,
+        parentId,
+        item.testItem,
+        item.westgard,
+        item.numControl,
+        item.errorType,
+        item.reagentStatus,
+        item.controlStatus,
+        item.standardStatus,
+        item.instrumentStatus,
+        item.rootCause,
+        item.correction,
+        item.result
+      ]);
+    }
+
+    if (childDataRows.length > 0) {
+      childSheet.getRange(childSheet.getLastRow() + 1, 1, childDataRows.length, childDataRows[0].length).setValues(childDataRows);
+    }
+
+    return { status: "success", message: "บันทึกข้อมูลเรียบร้อยแล้ว", parentId: parentId };
+
+  } catch (error) {
+    return { status: "error", message: error.toString() };
+  }
+}
+
+/**
+ * ฟังก์ชันบันทึกข้อมูลแบบฟอร์ม EQA (ทั้ง Parent และ Children ที่ไม่ผ่านเกณฑ์)
+ * ต้องมีแผ่นงาน EQA_Parent และ EQA_Child ในสเปรดชีตเดียวกัน
+ * EQA_Parent columns:
+ *   parentId | reviewDate | reviewerId | reviewerName | program | trialNumber |
+ *   testDate | totalItems | passedItems | headId | headName | headAckDate
+ * EQA_Child columns:
+ *   childId | parentId | testNopass | trendHistory | docProblem | prepProblem |
+ *   iqcReview | trendMatch | dilution | probAmount | impact | conclusion | correction
+ */
+function saveEqaData(formObj) {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(PARENT_SHEET_ID);
+    var parentSheet = spreadsheet.getSheetByName('EQA_Parent');
+    var childSheet = spreadsheet.getSheetByName('EQA_Child');
+
+    if (!parentSheet) throw new Error("ไม่พบแผ่นงานชื่อ EQA_Parent กรุณาสร้างแผ่นงานนี้ในสเปรดชีตหลักก่อน");
+    if (!childSheet) throw new Error("ไม่พบแผ่นงานชื่อ EQA_Child กรุณาสร้างแผ่นงานนี้ในสเปรดชีตหลักก่อน");
+
+    var p = formObj.parent;
+    var totalItemsCheck = Number(p.totalItems) || 0;
+    var passedItemsCheck = Number(p.passedItems) || 0;
+    var isAllPassed = totalItemsCheck > 0 && passedItemsCheck >= totalItemsCheck;
+
+    // อนุญาตให้ไม่มีรายการ Child (Nopass) ได้เฉพาะกรณีผ่านครบ 100% เท่านั้น
+    // ถ้ามีรายการตกเกณฑ์จริง (passedItems < totalItems) ต้องมีอย่างน้อย 1 รายการเสมอ
+    if (!isAllPassed && (!formObj.children || formObj.children.length === 0)) {
+      throw new Error("ไม่พบรายการ EQA ที่ไม่ผ่านเกณฑ์ กรุณาเพิ่มรายการอย่างน้อย 1 รายการ");
+    }
+
+    var dateObj = new Date();
+    var timestamp = Utilities.formatDate(dateObj, "GMT+7", "yyyyMMdd-HHmmss");
+    var parentId = "EQA-" + timestamp;
+    var attachment = formObj.attachment || {};
+
+    parentSheet.appendRow([
+      parentId,
+      p.reviewDate,
+      p.reviewerId,
+      p.reviewerName,
+      p.program,
+      p.trialNumber,
+      p.testDate,
+      p.totalItems,
+      p.passedItems,
+      p.headId ? p.headId : "-",           // หากไม่มีข้อมูลให้ใส่เป็นค่าว่าง
+      p.headName ? p.headName : "-",       // หากไม่มีข้อมูลให้ใส่เป็นค่าว่าง
+      p.headAckDate ? p.headAckDate : "-", // หากไม่มีข้อมูลให้ใส่เป็นค่าว่าง
+      attachment.fileId || '',
+      attachment.fileName || '',
+      attachment.fileUrl || ''
+    ]);
+
+    var childDataRows = [];
+    for (var i = 0; i < formObj.children.length; i++) {
+      var item = formObj.children[i];
+      var childId = parentId + "-C" + (i + 1);
+
+      childDataRows.push([
+        childId,
+        parentId,
+        item.testNopass,
+        item.trendHistory,
+        item.docProblem,
+        item.prepProblem,
+        item.iqcReview,
+        item.trendMatch,
+        item.dilution,
+        item.probAmount,
+        item.impact,
+        item.conclusion,
+        item.correction
+      ]);
+    }
+
+    if (childDataRows.length > 0) {
+      childSheet.getRange(childSheet.getLastRow() + 1, 1, childDataRows.length, childDataRows[0].length).setValues(childDataRows);
+    }
+
+    return { status: "success", message: "บันทึกข้อมูล EQA เรียบร้อยแล้ว", parentId: parentId };
+
+  } catch (error) {
+    return { status: "error", message: error.toString() };
+  }
+}
+  /**
+ * ฟังก์ชันดึงข้อมูลสรุปผล EQA ทั้งหมดมาแสดงใน Dashboard EQA
+ */
+function getEqaDashboardData() {
+  try {
+    var ss = SpreadsheetApp.openById(PARENT_SHEET_ID);
+    var parentSheet = ss.getSheetByName('EQA_Parent');
+    var childSheet  = ss.getSheetByName('EQA_Child');
+
+    if (!parentSheet || !childSheet) {
+      return { status: "error", message: "ไม่พบแผ่นงาน EQA_Parent หรือ EQA_Child ใน Google Sheets" };
+    }
+
+    var parentData = parentSheet.getDataRange().getValues();
+    var childData  = childSheet.getDataRange().getValues();
+
+    if (parentData.length <= 1) return { status: "success", data: [] };
+
+    // 1) จัดกลุ่ม Child ตาม parentId
+    var childMap = {};
+    for (var j = 1; j < childData.length; j++) {
+      var cRow = childData[j];
+      var cpId = String(cRow[1] || "").trim();
+      if (!cpId) continue;
+      if (!childMap[cpId]) childMap[cpId] = [];
+      childMap[cpId].push(cRow);
+    }
+
+    // 2) วนจาก Parent เป็นหลัก -> ครั้งที่ผ่านหมดก็จะติดมาด้วย
+    var resultList = [];
+    var usedParent = {};
+
+    for (var i = 1; i < parentData.length; i++) {
+      var row = parentData[i];
+      var pId = String(row[0] || "").trim();
+      if (!pId) continue;
+      usedParent[pId] = true;
+
+      var rawDate = row[1], formattedDate = "", timeVal = 0;
+      if (rawDate instanceof Date) {
+        formattedDate = Utilities.formatDate(rawDate, "GMT+7", "yyyy-MM-dd");
+        timeVal = rawDate.getTime();
+      } else if (rawDate) {
+        formattedDate = String(rawDate).trim();
+        var pd = new Date(rawDate);
+        timeVal = isNaN(pd.getTime()) ? 0 : pd.getTime();
+      }
+
+      var total  = Number(row[7]) || 0;
+      var passed = Number(row[8]) || 0;
+
+      var base = {
+        parentId: pId,
+        reviewDate: formattedDate,
+        timeVal: timeVal,
+        reviewerName: String(row[3] || ""),
+        program: String(row[4] || ""),
+        trialNumber: String(row[5] || ""),
+        totalItems: total,
+        passedItems: passed
+      };
+
+      var kids = childMap[pId] || [];
+
+      if (kids.length === 0) {
+        // ครั้งที่ผ่านทุกรายการ
+        resultList.push(Object.assign({}, base, {
+          childId: "",
+          isFail: false,
+          status: "ผ่านทุกรายการ",
+          testNopass: "-", iqcReview: "-", probAmount: "-",
+          impact: "-", conclusion: "-", correction: "-"
+        }));
+      } else {
+        kids.forEach(function (cRow) {
+          resultList.push(Object.assign({}, base, {
+            childId: String(cRow[0] || ""),
+            isFail: true,
+            status: "ไม่ผ่าน",
+            testNopass: String(cRow[2] || ""),
+            iqcReview:  String(cRow[6] || ""),
+            probAmount: String(cRow[9] || ""),
+            impact:     String(cRow[10] || ""),
+            conclusion: String(cRow[11] || ""),
+            correction: String(cRow[12] || "")
+          }));
+        });
+      }
+    }
+
+    // 3) กันข้อมูลกำพร้า (Child ที่หา Parent ไม่เจอ) ไม่ให้หายไปเงียบ ๆ
+    Object.keys(childMap).forEach(function (orphanId) {
+      if (usedParent[orphanId]) return;
+      childMap[orphanId].forEach(function (cRow) {
+        resultList.push({
+          childId: String(cRow[0] || ""), parentId: orphanId,
+          reviewDate: "-", timeVal: 0, program: "-", reviewerName: "",
+          trialNumber: "", totalItems: 0, passedItems: 0,
+          isFail: true, status: "ไม่ผ่าน",
+          testNopass: String(cRow[2] || ""), iqcReview: String(cRow[6] || ""),
+          probAmount: String(cRow[9] || ""), impact: String(cRow[10] || ""),
+          conclusion: String(cRow[11] || ""), correction: String(cRow[12] || "")
+        });
+      });
+    });
+
+    resultList.sort(function (a, b) { return b.timeVal - a.timeVal; });
+    return { status: "success", data: resultList };
+
+  } catch (error) {
+    return { status: "error", message: "เกิดข้อผิดพลาดในการดึงข้อมูล EQA Dashboard: " + error.toString() };
+  }
+}
+
+function getEqaPassRateSummary(startDate, endDate) {
+  try {
+    var sheet = SpreadsheetApp.openById(PARENT_SHEET_ID).getSheetByName('EQA_Parent');
+    if (!sheet) throw new Error('ไม่พบแผ่นงาน EQA_Parent');
+
+    var rows = sheet.getDataRange().getValues();
+    var start = startDate ? new Date(startDate + 'T00:00:00') : null;
+    var end = endDate ? new Date(endDate + 'T23:59:59') : null;
+
+    var totalAll = 0;
+    var passedAll = 0;
+    var programMap = {};
+
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows[i];
+      var reviewDate = row[1];
+      var program = String(row[4] || 'ไม่ระบุ Program').trim();
+      var totalItems = Number(row[7]) || 0;
+      var passedItems = Number(row[8]) || 0;
+
+      if (reviewDate instanceof Date) {
+        if (start && reviewDate < start) continue;
+        if (end && reviewDate > end) continue;
+      }
+
+      if (totalItems <= 0) continue;
+
+      totalAll += totalItems;
+      passedAll += passedItems;
+
+      if (!programMap[program]) {
+        programMap[program] = {
+          program: program,
+          totalItems: 0,
+          passedItems: 0
+        };
+      }
+
+      programMap[program].totalItems += totalItems;
+      programMap[program].passedItems += passedItems;
+    }
+
+    var byProgram = Object.keys(programMap).map(function(program) {
+      var item = programMap[program];
+      item.passRate = Number(
+        ((item.passedItems / item.totalItems) * 100).toFixed(2)
+      );
+      return item;
+    }).sort(function(a, b) {
+      return b.passRate - a.passRate;
+    });
+
+    return {
+      status: 'success',
+      overall: {
+        totalItems: totalAll,
+        passedItems: passedAll,
+        passRate: totalAll
+          ? Number(((passedAll / totalAll) * 100).toFixed(2))
+          : 0
+      },
+      byProgram: byProgram
+    };
+
+  } catch (error) {
+    return { status: 'error', message: error.toString() };
+  }
+}
+
+
+
+/** ===================== ค้นหา / แก้ไข IQC + EQA ===================== */
+function _formatDateForClient_(value) {
+  if (value instanceof Date) return Utilities.formatDate(value, 'GMT+7', 'yyyy-MM-dd');
+  if (value === null || value === undefined || value === '') return '';
+  var d = new Date(value);
+  return isNaN(d.getTime()) ? String(value) : Utilities.formatDate(d, 'GMT+7', 'yyyy-MM-dd');
+}
+
+function _sheetRowsByHeaders_(sheet) {
+  var values = sheet.getDataRange().getValues();
+  if (!values.length) return {headers: [], rows: []};
+  return {headers: values[0].map(function(h){ return String(h).trim(); }), rows: values.slice(1)};
+}
+
+function _findHeader_(headers, names, fallback) {
+  for (var i = 0; i < names.length; i++) {
+    var idx = headers.indexOf(names[i]);
+    if (idx !== -1) return idx;
+  }
+  return fallback;
+}
+
+function _deleteChildRowsByParentId_(sheet, parentId, parentIdColIndex) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  var values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  for (var i = values.length - 1; i >= 0; i--) {
+    if (String(values[i][parentIdColIndex] || '').trim() === String(parentId).trim()) {
+      sheet.deleteRow(i + 2);
+    }
+  }
+}
+
+function _appendIqcChildren_(childSheet, parentId, children) {
+  var rows = [];
+  (children || []).forEach(function(item, i) {
+    rows.push([
+      parentId + '-C' + (i + 1), parentId, item.testItem || '', item.westgard || '',
+      item.numControl || '', item.errorType || '', item.reagentStatus || '',
+      item.controlStatus || '', item.standardStatus || '', item.instrumentStatus || '',
+      item.rootCause || '', item.correction || '', item.result || ''
+    ]);
+  });
+  if (rows.length) childSheet.getRange(childSheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+function _appendEqaChildren_(childSheet, parentId, children) {
+  var rows = [];
+  (children || []).forEach(function(item, i) {
+    rows.push([
+      parentId + '-C' + (i + 1), parentId, item.testNopass || '', item.trendHistory || '',
+      item.docProblem || '', item.prepProblem || '', item.iqcReview || '', item.trendMatch || '',
+      item.dilution || '', item.probAmount || '', item.impact || '', item.conclusion || '', item.correction || ''
+    ]);
+  });
+  if (rows.length) childSheet.getRange(childSheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+function getIqcRecordsForEdit(filters) {
+  try {
+    filters = filters || {};
+    var ps = SpreadsheetApp.openById(PARENT_SHEET_ID).getSheetByName('IQC_Parent');
+    var cs = SpreadsheetApp.openById(CHILD_SHEET_ID).getSheetByName('IQC_Child');
+    if (!ps || !cs) throw new Error('ไม่พบ IQC_Parent หรือ IQC_Child');
+    var p = _sheetRowsByHeaders_(ps), c = _sheetRowsByHeaders_(cs);
+    var ph = p.headers, ch = c.headers;
+    var pIdx = {
+      operatorId: _findHeader_(ph, ['operatorId'], 0), operatorName: _findHeader_(ph, ['operatorName'], 1),
+      parentId: _findHeader_(ph, ['parentId'], 2), recordDate: _findHeader_(ph, ['recordDate'], 3),
+      shift: _findHeader_(ph, ['shift'], 4), section: _findHeader_(ph, ['section'], 5), machine: _findHeader_(ph, ['machine'], 6)
+    };
+    var cIdx = {
+      childId: _findHeader_(ch, ['childId'], 0), parentId: _findHeader_(ch, ['parentId'], 1), testItem: _findHeader_(ch, ['testItem'], 2),
+      westgard: _findHeader_(ch, ['westgard'], 3), numControl: _findHeader_(ch, ['numControl'], 4), errorType: _findHeader_(ch, ['errorType'], 5),
+      reagentStatus: _findHeader_(ch, ['reagentStatus'], 6), controlStatus: _findHeader_(ch, ['controlStatus'], 7), standardStatus: _findHeader_(ch, ['standardStatus'], 8),
+      instrumentStatus: _findHeader_(ch, ['instrumentStatus'], 9), rootCause: _findHeader_(ch, ['rootCause'], 10), correction: _findHeader_(ch, ['correction'], 11), result: _findHeader_(ch, ['result'], 12)
+    };
+    var childrenByParent = {};
+    c.rows.forEach(function(r) {
+      var id = String(r[cIdx.parentId] || '').trim(); if (!id) return;
+      if (!childrenByParent[id]) childrenByParent[id] = [];
+      childrenByParent[id].push({childId:String(r[cIdx.childId]||''), testItem:String(r[cIdx.testItem]||''), westgard:String(r[cIdx.westgard]||''), numControl:String(r[cIdx.numControl]||''), errorType:String(r[cIdx.errorType]||''), reagentStatus:String(r[cIdx.reagentStatus]||''), controlStatus:String(r[cIdx.controlStatus]||''), standardStatus:String(r[cIdx.standardStatus]||''), instrumentStatus:String(r[cIdx.instrumentStatus]||''), rootCause:String(r[cIdx.rootCause]||''), correction:String(r[cIdx.correction]||''), result:String(r[cIdx.result]||'')});
+    });
+    var start = filters.startDate ? new Date(filters.startDate + 'T00:00:00') : null;
+    var end = filters.endDate ? new Date(filters.endDate + 'T23:59:59') : null;
+    var section = String(filters.section || '').trim().toLowerCase();
+    var machine = String(filters.machine || '').trim().toLowerCase();
+    var keyword = String(filters.keyword || '').trim().toLowerCase();
+    var out = [];
+    p.rows.forEach(function(r) {
+      var parentId = String(r[pIdx.parentId] || '').trim(); if (!parentId) return;
+      var rawDate = r[pIdx.recordDate], date = _formatDateForClient_(rawDate);
+      var dt = rawDate instanceof Date ? rawDate : new Date(rawDate);
+      if (start && !isNaN(dt.getTime()) && dt < start) return;
+      if (end && !isNaN(dt.getTime()) && dt > end) return;
+      if (section && String(r[pIdx.section]||'').toLowerCase() !== section) return;
+      if (machine && String(r[pIdx.machine]||'').toLowerCase() !== machine) return;
+      var kids = childrenByParent[parentId] || [];
+      var hay = [parentId,r[pIdx.operatorId],r[pIdx.operatorName],r[pIdx.shift],r[pIdx.section],r[pIdx.machine]].concat(kids.reduce(function(a,k){return a.concat(Object.keys(k).map(function(x){return k[x];}));},[])).join(' ').toLowerCase();
+      if (keyword && hay.indexOf(keyword) === -1) return;
+      out.push({parentId:parentId, operatorId:String(r[pIdx.operatorId]||''), operatorName:String(r[pIdx.operatorName]||''), recordDate:date, shift:String(r[pIdx.shift]||''), section:String(r[pIdx.section]||''), machine:String(r[pIdx.machine]||''), childCount:kids.length, children:kids});
+    });
+    out.sort(function(a,b){ return b.recordDate.localeCompare(a.recordDate) || b.parentId.localeCompare(a.parentId); });
+    return {status:'success', data:out};
+  } catch (e) { return {status:'error', message:e.toString()}; }
+}
+
+function getIqcRecordForEdit(parentId) {
+  var r = getIqcRecordsForEdit({keyword: String(parentId || '')});
+  if (r.status !== 'success') return r;
+  var item = r.data.filter(function(x){ return x.parentId === String(parentId).trim(); })[0];
+  return item ? {status:'success', data:item} : {status:'error', message:'ไม่พบข้อมูล IQC รหัส ' + parentId};
+}
+
+function updateIqcData(formObj) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var parentId = String(formObj.parentId || '').trim();
+    if (!parentId) throw new Error('ไม่พบรหัสอ้างอิง IQC สำหรับแก้ไข');
+    var ps = SpreadsheetApp.openById(PARENT_SHEET_ID).getSheetByName('IQC_Parent');
+    var cs = SpreadsheetApp.openById(CHILD_SHEET_ID).getSheetByName('IQC_Child');
+    if (!ps || !cs) throw new Error('ไม่พบ IQC_Parent หรือ IQC_Child');
+    var p = _sheetRowsByHeaders_(ps), ph = p.headers;
+    var idx = {operatorId:_findHeader_(ph,['operatorId'],0),operatorName:_findHeader_(ph,['operatorName'],1),parentId:_findHeader_(ph,['parentId'],2),recordDate:_findHeader_(ph,['recordDate'],3),shift:_findHeader_(ph,['shift'],4),section:_findHeader_(ph,['section'],5),machine:_findHeader_(ph,['machine'],6)};
+    var rowNo = -1;
+    for (var i=0;i<p.rows.length;i++) if (String(p.rows[i][idx.parentId]||'').trim()===parentId) { rowNo=i+2; break; }
+    if (rowNo<0) throw new Error('ไม่พบข้อมูล IQC รหัส ' + parentId);
+    ps.getRange(rowNo,1,1,7).setValues([[formObj.parent.operatorId||'',formObj.parent.operatorName||'',parentId,formObj.parent.recordDate||'',formObj.parent.shift||'',formObj.parent.section||'',formObj.parent.machine||'']]);
+    _deleteChildRowsByParentId_(cs,parentId,1);
+    _appendIqcChildren_(cs,parentId,formObj.children || []);
+    SpreadsheetApp.flush();
+    return {status:'success',message:'แก้ไขข้อมูล IQC เรียบร้อยแล้ว',parentId:parentId};
+  } catch(e) { return {status:'error',message:e.toString()}; }
+  finally { try { lock.releaseLock(); } catch(ignore) {} }
+}
+
+function getEqaRecordsForEdit(filters) {
+  try {
+    filters = filters || {};
+    var ss=SpreadsheetApp.openById(PARENT_SHEET_ID), ps=ss.getSheetByName('EQA_Parent'), cs=ss.getSheetByName('EQA_Child');
+    if(!ps||!cs) throw new Error('ไม่พบ EQA_Parent หรือ EQA_Child');
+    var p=_sheetRowsByHeaders_(ps), c=_sheetRowsByHeaders_(cs), ph=p.headers, ch=c.headers;
+    var pi={parentId:_findHeader_(ph,['parentId'],0),reviewDate:_findHeader_(ph,['reviewDate'],1),reviewerId:_findHeader_(ph,['reviewerId'],2),reviewerName:_findHeader_(ph,['reviewerName'],3),program:_findHeader_(ph,['program'],4),trialNumber:_findHeader_(ph,['trialNumber'],5),testDate:_findHeader_(ph,['testDate'],6),totalItems:_findHeader_(ph,['totalItems'],7),passedItems:_findHeader_(ph,['passedItems'],8),headId:_findHeader_(ph,['headId'],9),headName:_findHeader_(ph,['headName'],10),headAckDate:_findHeader_(ph,['headAckDate'],11),fileId:_findHeader_(ph,['fileId'],12),fileName:_findHeader_(ph,['fileName'],13),fileUrl:_findHeader_(ph,['fileUrl'],14)};
+    var ci={childId:_findHeader_(ch,['childId'],0),parentId:_findHeader_(ch,['parentId'],1),testNopass:_findHeader_(ch,['testNopass'],2),trendHistory:_findHeader_(ch,['trendHistory'],3),docProblem:_findHeader_(ch,['docProblem'],4),prepProblem:_findHeader_(ch,['prepProblem'],5),iqcReview:_findHeader_(ch,['iqcReview'],6),trendMatch:_findHeader_(ch,['trendMatch'],7),dilution:_findHeader_(ch,['dilution'],8),probAmount:_findHeader_(ch,['probAmount'],9),impact:_findHeader_(ch,['impact'],10),conclusion:_findHeader_(ch,['conclusion'],11),correction:_findHeader_(ch,['correction'],12)};
+    var kids={}; c.rows.forEach(function(r){var id=String(r[ci.parentId]||'').trim();if(!id)return;(kids[id]||(kids[id]=[])).push({childId:String(r[ci.childId]||''),testNopass:String(r[ci.testNopass]||''),trendHistory:String(r[ci.trendHistory]||''),docProblem:String(r[ci.docProblem]||''),prepProblem:String(r[ci.prepProblem]||''),iqcReview:String(r[ci.iqcReview]||''),trendMatch:String(r[ci.trendMatch]||''),dilution:String(r[ci.dilution]||''),probAmount:String(r[ci.probAmount]||''),impact:String(r[ci.impact]||''),conclusion:String(r[ci.conclusion]||''),correction:String(r[ci.correction]||'')});});
+    var start=filters.startDate?new Date(filters.startDate+'T00:00:00'):null,end=filters.endDate?new Date(filters.endDate+'T23:59:59'):null,program=String(filters.program||'').trim().toLowerCase(),kw=String(filters.keyword||'').trim().toLowerCase();
+    var out=[]; p.rows.forEach(function(r){var id=String(r[pi.parentId]||'').trim();if(!id)return;var raw=r[pi.reviewDate],date=_formatDateForClient_(raw),dt=raw instanceof Date?raw:new Date(raw);if(start&&!isNaN(dt.getTime())&&dt<start)return;if(end&&!isNaN(dt.getTime())&&dt>end)return;if(program&&String(r[pi.program]||'').toLowerCase()!==program)return;var chs=kids[id]||[],hay=[id,r[pi.reviewerId],r[pi.reviewerName],r[pi.program],r[pi.trialNumber],r[pi.testDate],r[pi.headId],r[pi.headName]].concat(chs.reduce(function(a,k){return a.concat(Object.keys(k).map(function(x){return k[x];}));},[])).join(' ').toLowerCase();if(kw&&hay.indexOf(kw)===-1)return;out.push({parentId:id,reviewDate:date,reviewerId:String(r[pi.reviewerId]||''),reviewerName:String(r[pi.reviewerName]||''),program:String(r[pi.program]||''),trialNumber:String(r[pi.trialNumber]||''),testDate:_formatDateForClient_(r[pi.testDate]),totalItems:Number(r[pi.totalItems])||0,passedItems:Number(r[pi.passedItems])||0,headId:String(r[pi.headId]||''),headName:String(r[pi.headName]||''),headAckDate:_formatDateForClient_(r[pi.headAckDate]),attachment:{fileId:String(r[pi.fileId]||''),fileName:String(r[pi.fileName]||''),fileUrl:String(r[pi.fileUrl]||'')},childCount:chs.length,children:chs});});
+    out.sort(function(a,b){return b.reviewDate.localeCompare(a.reviewDate)||b.parentId.localeCompare(a.parentId);}); return {status:'success',data:out};
+  } catch(e){return {status:'error',message:e.toString()};}
+}
+function getEqaRecordForEdit(parentId){var r=getEqaRecordsForEdit({keyword:String(parentId||'')});if(r.status!=='success')return r;var x=r.data.filter(function(a){return a.parentId===String(parentId).trim();})[0];return x?{status:'success',data:x}:{status:'error',message:'ไม่พบข้อมูล EQA รหัส '+parentId};}
+
+function updateEqaData(formObj) {
+  var lock=LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    var parentId=String(formObj.parentId||'').trim(); if(!parentId) throw new Error('ไม่พบรหัสอ้างอิง EQA สำหรับแก้ไข');
+    var ss=SpreadsheetApp.openById(PARENT_SHEET_ID), ps=ss.getSheetByName('EQA_Parent'), cs=ss.getSheetByName('EQA_Child'); if(!ps||!cs)throw new Error('ไม่พบ EQA_Parent หรือ EQA_Child');
+    var p=_sheetRowsByHeaders_(ps),ph=p.headers, idx={parentId:_findHeader_(ph,['parentId'],0),reviewDate:_findHeader_(ph,['reviewDate'],1),reviewerId:_findHeader_(ph,['reviewerId'],2),reviewerName:_findHeader_(ph,['reviewerName'],3),program:_findHeader_(ph,['program'],4),trialNumber:_findHeader_(ph,['trialNumber'],5),testDate:_findHeader_(ph,['testDate'],6),totalItems:_findHeader_(ph,['totalItems'],7),passedItems:_findHeader_(ph,['passedItems'],8),headId:_findHeader_(ph,['headId'],9),headName:_findHeader_(ph,['headName'],10),headAckDate:_findHeader_(ph,['headAckDate'],11),fileId:_findHeader_(ph,['fileId'],12),fileName:_findHeader_(ph,['fileName'],13),fileUrl:_findHeader_(ph,['fileUrl'],14)};
+    var rowNo=-1;for(var i=0;i<p.rows.length;i++)if(String(p.rows[i][idx.parentId]||'').trim()===parentId){rowNo=i+2;break;}if(rowNo<0)throw new Error('ไม่พบข้อมูล EQA รหัส '+parentId);
+    var pp=formObj.parent||{}, att=formObj.attachment||{};
+    var old=ps.getRange(rowNo,1,1,Math.max(15,ps.getLastColumn())).getValues()[0];
+    var fileId=att.fileId||old[idx.fileId]||'',fileName=att.fileName||old[idx.fileName]||'',fileUrl=att.fileUrl||old[idx.fileUrl]||'';
+    var row=[parentId,pp.reviewDate||'',pp.reviewerId||'',pp.reviewerName||'',pp.program||'',pp.trialNumber||'',pp.testDate||'',pp.totalItems||0,pp.passedItems||0,pp.headId||'-',pp.headName||'-',pp.headAckDate||'-',fileId,fileName,fileUrl];
+    ps.getRange(rowNo,1,1,15).setValues([row]);
+    _deleteChildRowsByParentId_(cs,parentId,1); var total=Number(pp.totalItems)||0,passed=Number(pp.passedItems)||0;if(!(total>0&&passed>=total)&&(!formObj.children||!formObj.children.length))throw new Error('จำนวน Item ที่ไม่ผ่านต้องมีรายการอย่างน้อย 1 รายการ');
+    _appendEqaChildren_(cs,parentId,formObj.children||[]); SpreadsheetApp.flush(); return {status:'success',message:'แก้ไขข้อมูล EQA เรียบร้อยแล้ว',parentId:parentId};
+  }catch(e){return {status:'error',message:e.toString()};}finally{try{lock.releaseLock();}catch(ignore){}}
+}
+
+var EQA_DRIVE_FOLDER_ID = '1dNxNO2Mr0wXHrRgefnT7sq5b2ONPD3Zr';
+var EQA_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+/* รับไฟล์จาก index.html, บันทึกใน Google Drive และคืนข้อมูลอ้างอิง */
+function uploadEqaFile(fileObj) {
+  try {
+    if (!fileObj || !fileObj.base64 || !fileObj.name || !fileObj.mimeType) {
+      throw new Error('ไม่พบไฟล์ที่ต้องการอัปโหลด');
+    }
+
+    var allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (allowedTypes.indexOf(fileObj.mimeType) === -1) {
+      throw new Error('รองรับเฉพาะ PDF, JPG และ PNG');
+    }
+
+    var bytes = Utilities.base64Decode(fileObj.base64);
+    if (bytes.length > EQA_MAX_FILE_SIZE) {
+      throw new Error('ไฟล์มีขนาดเกิน 5 MB');
+    }
+
+    if (!EQA_DRIVE_FOLDER_ID || EQA_DRIVE_FOLDER_ID.indexOf('ใส่_') === 0) {
+      throw new Error('ยังไม่ได้ตั้งค่า EQA_DRIVE_FOLDER_ID');
+    }
+
+    var safeName = String(fileObj.name).replace(/[\\/:*?"<>|]/g, '_');
+    var blob = Utilities.newBlob(bytes, fileObj.mimeType, safeName);
+    var file = DriveApp.getFolderById(EQA_DRIVE_FOLDER_ID).createFile(blob);
+ 
+    return {
+      status: 'success',
+      fileId: file.getId(),
+      fileName: file.getName(),
+      fileUrl: file.getUrl()
+    };
+  } catch (error) {
+    return { status: 'error', message: error.toString() };
+  }
+}
+
+function authorizeEqaDrive() {
+  return DriveApp.getRootFolder().getName();
+}
+
+
+/**
+ * สร้างรายงาน PDF การทบทวนผล EQA จากข้อมูล EQA_Parent และ EQA_Child
+ * - ไม่เพิ่มคอลัมน์ใหม่ใน Google Sheets
+ * - สร้าง Google Doc ชั่วคราว แล้วแปลงเป็น PDF เพื่อให้ภาษาไทยและตารางทำงานได้เสถียร
+ * - บันทึก PDF ลงโฟลเดอร์เดียวกับไฟล์ EQA ที่ตั้งไว้ใน EQA_DRIVE_FOLDER_ID
+ */
+function generateEqaPdf(parentId) {
+  try {
+    parentId = String(parentId || '').trim();
+    if (!parentId) throw new Error('ไม่พบรหัสอ้างอิง EQA');
+
+    var ss = SpreadsheetApp.openById(PARENT_SHEET_ID);
+    var ps = ss.getSheetByName('EQA_Parent');
+    var cs = ss.getSheetByName('EQA_Child');
+    if (!ps || !cs) throw new Error('ไม่พบ EQA_Parent หรือ EQA_Child');
+
+    var p = _sheetRowsByHeaders_(ps), c = _sheetRowsByHeaders_(cs);
+    var ph = p.headers, ch = c.headers;
+    var pi = {
+      parentId:_findHeader_(ph,['parentId'],0), reviewDate:_findHeader_(ph,['reviewDate'],1),
+      reviewerId:_findHeader_(ph,['reviewerId'],2), reviewerName:_findHeader_(ph,['reviewerName'],3),
+      program:_findHeader_(ph,['program'],4), trialNumber:_findHeader_(ph,['trialNumber'],5),
+      testDate:_findHeader_(ph,['testDate'],6), totalItems:_findHeader_(ph,['totalItems'],7),
+      passedItems:_findHeader_(ph,['passedItems'],8), headId:_findHeader_(ph,['headId'],9),
+      headName:_findHeader_(ph,['headName'],10), headAckDate:_findHeader_(ph,['headAckDate'],11),
+      fileId:_findHeader_(ph,['fileId'],12), fileName:_findHeader_(ph,['fileName'],13), fileUrl:_findHeader_(ph,['fileUrl'],14)
+    };
+    var ci = {
+      childId:_findHeader_(ch,['childId'],0), parentId:_findHeader_(ch,['parentId'],1),
+      testNopass:_findHeader_(ch,['testNopass'],2), trendHistory:_findHeader_(ch,['trendHistory'],3),
+      docProblem:_findHeader_(ch,['docProblem'],4), prepProblem:_findHeader_(ch,['prepProblem'],5),
+      iqcReview:_findHeader_(ch,['iqcReview'],6), trendMatch:_findHeader_(ch,['trendMatch'],7),
+      dilution:_findHeader_(ch,['dilution'],8), probAmount:_findHeader_(ch,['probAmount'],9),
+      impact:_findHeader_(ch,['impact'],10), conclusion:_findHeader_(ch,['conclusion'],11),
+      correction:_findHeader_(ch,['correction'],12)
+    };
+
+    var parent = null;
+    p.rows.forEach(function(r){
+      if (String(r[pi.parentId] || '').trim() === parentId) parent = r;
+    });
+    if (!parent) throw new Error('ไม่พบข้อมูล EQA รหัส ' + parentId);
+
+    var children = [];
+    c.rows.forEach(function(r){
+      if (String(r[ci.parentId] || '').trim() === parentId) children.push(r);
+    });
+
+    var total = Number(parent[pi.totalItems]) || 0;
+    var passed = Number(parent[pi.passedItems]) || 0;
+    var failed = Math.max(total - passed, 0);
+    var passRate = total > 0 ? (passed / total * 100) : 0;
+    var statusText = (total > 0 && passed >= total) ? 'ผ่านเกณฑ์ครบ 100%' : 'มีรายการไม่ผ่านเกณฑ์';
+    var tz = Session.getScriptTimeZone() || 'Asia/Bangkok';
+    var generatedAt = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm');
+    var reviewDate = _eqaPdfDate_(parent[pi.reviewDate], tz);
+    var testDate = _eqaPdfDate_(parent[pi.testDate], tz);
+    var ackDate = _eqaPdfDate_(parent[pi.headAckDate], tz);
+    var safeProgram = String(parent[pi.program] || 'EQA').replace(/[\\/:*?"<>|]/g,'_').trim() || 'EQA';
+    var safeTrial = String(parent[pi.trialNumber] || '').replace(/[\\/:*?"<>|]/g,'_').trim();
+    var fileName = 'EQA_' + (reviewDate ? reviewDate.replace(/\//g,'-') : Utilities.formatDate(new Date(),tz,'yyyy-MM-dd')) + '_' + safeProgram + (safeTrial ? '_Trial-' + safeTrial : '') + '.pdf';
+
+
+    //Template PDF
+    var doc = DocumentApp.create('TMP_' + fileName.replace(/\.pdf$/i,''));
+    var body = doc.getBody();
+    body.setMarginTop(36).setMarginBottom(36).setMarginLeft(42).setMarginRight(42);
+
+    var title = body.appendParagraph('โรงพยาบาลน้ำพอง');
+    title.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    title.editAsText().setBold(true).setFontSize(16);
+    var dept = body.appendParagraph('กลุ่มงานเทคนิคการแพทย์');
+    dept.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    dept.editAsText().setBold(true).setFontSize(12);
+    var reportTitle = body.appendParagraph('รายงานการทบทวนผลการประเมินคุณภาพภายนอก (EQA)');
+    reportTitle.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    reportTitle.editAsText().setBold(true).setFontSize(10);
+    
+
+    var info = body.appendTable([
+      ['รหัสอ้างอิง EQA', parentId, 'วันที่ทบทวน', reviewDate || '-'],
+      ['EQA Program', String(parent[pi.program] || '-'), 'Trial Number', String(parent[pi.trialNumber] || '-')],
+      ['วันที่ทดสอบ', testDate || '-', 'ผู้ทบทวน', String(parent[pi.reviewerName] || '-')],
+      ['หัวหน้ากลุ่มงาน/ผู้รับรอง', String(parent[pi.headName] || '-'), 'วันที่รับรอง', ackDate || '-']
+    ]);
+    info.setBorderWidth(0.5);
+    for (var ir=0; ir<info.getNumRows(); ir++) {
+      info.getCell(ir,0).setBackgroundColor('#eaf2f8');
+      info.getCell(ir,2).setBackgroundColor('#eaf2f8');
+      info.getCell(ir,0).editAsText().setBold(true);
+      info.getCell(ir,2).editAsText().setBold(true);
+    }
+
+   
+    var sumTitle = body.appendParagraph('1. สรุปผลการประเมิน');
+    sumTitle.editAsText().setBold(true).setFontSize(9);
+    var summary = body.appendTable([
+      ['รายการ','ผล'],
+      ['จำนวน Item ทั้งหมด', String(total)],
+      ['จำนวน Item ที่ผ่านเกณฑ์', String(passed)],
+      ['จำนวน Item ที่ไม่ผ่านเกณฑ์', String(failed)],
+      ['ร้อยละผ่านเกณฑ์', passRate.toFixed(2) + '%'],
+      ['สรุปสถานะ', statusText]
+    ]);
+    summary.setBorderWidth(0.5);
+    summary.getCell(0,0).setBackgroundColor('#dbeafe');
+    summary.getCell(0,1).setBackgroundColor('#dbeafe');
+    summary.getCell(0,0).editAsText().setBold(true);
+    summary.getCell(0,1).editAsText().setBold(true);
+
+    body.appendParagraph('');
+    var RPT_FONT = 'Sarabun';
+
+    var HEAD_A = ['รายการทดสอบ','Trend','ปัญหาเอกสาร','ปัญหาเตรียมตัวอย่าง','ทบทวน IQC','แนวโน้ม EQA'];
+    var HEAD_B = ['รายการทดสอบ','มีการละลายตัวอย่าง','จำนวนตัวอย่างที่เป็นปัญหา','ผลกระทบ','สรุปผล','การแก้ไข'];
+
+    /** สร้างตารางพร้อมหัวตาราง */
+    function buildDetailTable(body, headers, widths) {
+      var t = body.appendTable([headers]);
+      t.setBorderWidth(0.5);
+      for (var c = 0; c < headers.length; c++) {
+        var cell = t.getCell(0, c);
+        cell.setBackgroundColor('#dbeafe');
+        cell.editAsText().setBold(true).setFontSize(9);
+        if (widths && widths[c]) t.setColumnWidth(c, widths[c]);
+      }
+      return t;
+    }
+
+    /** ใส่ข้อมูล 1 แถว + จัดฟอนต์ */
+    function pushRow(table, values) {
+      var row = table.appendTableRow();
+      values.forEach(function (v) {
+        var cell = row.appendTableCell(String(v == null || v === '' ? '-' : v));
+        cell.editAsText().setFontSize(8);
+      });
+      return row;
+    }
+
+    // ---------- ส่วนที่ ก ----------
+    var capA = body.appendParagraph('ตาราง ก. การวิเคราะห์สาเหตุเบื้องต้น');
+    capA.editAsText().setBold(true).setFontSize(9);
+
+    var detailA = buildDetailTable(body, HEAD_A, [90, 60, 90, 95, 80, 70]);
+
+    // ---------- ส่วนที่ ข ----------
+    var capB = body.appendParagraph('ตาราง ข. สาเหตุ ผลกระทบและการแก้ไข');
+    capB.editAsText().setBold(true).setFontSize(9);
+
+    var detailB = buildDetailTable(body, HEAD_B, [90, 85, 95, 60, 85, 110]);
+
+    // ---------- เติมข้อมูล ----------
+    children.forEach(function (ch) {
+      pushRow(detailA, [
+        ch[ci.testNopass], ch[ci.trendHistory], ch[ci.docProblem],
+        ch[ci.prepProblem], ch[ci.iqcReview], ch[ci.trendMatch]
+      ]);
+      pushRow(detailB, [
+        ch[ci.testNopass], ch[ci.dilution], ch[ci.probAmount],
+        ch[ci.impact], ch[ci.conclusion], ch[ci.correction]
+      ]);
+    });
+
+    if (parent[pi.fileUrl] || parent[pi.fileName]) {
+      body.appendParagraph('');
+      var attTitle = body.appendParagraph('3. เอกสารแนบ');
+      attTitle.editAsText().setBold(true).setFontSize(9);
+      body.appendParagraph('ไฟล์แนบ: ' + String(parent[pi.fileName] || '-'));
+      if (parent[pi.fileUrl]) body.appendParagraph('ลิงก์ไฟล์แนบ: ' + String(parent[pi.fileUrl]));
+    }
+
+    body.appendParagraph('');
+    var sigTitle = body.appendParagraph('4. การรับรองผลการทบทวน');
+    sigTitle.editAsText().setBold(true).setFontSize(9);
+    var sig = body.appendTable([
+      ['ผู้ทบทวน','ผู้รับรอง/หัวหน้ากลุ่มงาน'],
+      ['', ''],
+      [String(parent[pi.reviewerName] || '-'), String(parent[pi.headName] || '-')],
+      ['วันที่ ' + (reviewDate || '________________'), 'วันที่ ' + (ackDate || '________________')]
+    ]);
+    sig.setBorderWidth(0.5);
+    sig.getCell(0,0).setBackgroundColor('#f3f4f6');
+    sig.getCell(0,1).setBackgroundColor('#f3f4f6');
+    sig.getCell(0,0).editAsText().setBold(true);
+    sig.getCell(0,1).editAsText().setBold(true);
+
+    body.appendParagraph('');
+    var footer = body.appendParagraph('จัดทำจากระบบทบทวน EQA | สร้างรายงานเมื่อ ' + generatedAt);
+    footer.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+    footer.editAsText().setFontSize(8);
+
+    doc.saveAndClose();
+    Utilities.sleep(500);
+
+    var tempFile = DriveApp.getFileById(doc.getId());
+    var pdfBlob = tempFile.getAs(MimeType.PDF).setName(fileName);
+    var folder = DriveApp.getFolderById(EQA_DRIVE_FOLDER_ID);
+    var pdfFile = folder.createFile(pdfBlob);
+    tempFile.setTrashed(true);
+
+    return {status:'success', message:'สร้างไฟล์ PDF เรียบร้อยแล้ว', parentId:parentId, fileId:pdfFile.getId(), fileName:pdfFile.getName(), fileUrl:pdfFile.getUrl()};
+  } catch (e) {
+    return {status:'error', message:e.toString()};
+  }
+}
+
+function _eqaPdfDate_(value, tz) {
+  if (!value) return '';
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) return Utilities.formatDate(value,tz,'dd/MM/yyyy');
+  var d = new Date(value);
+  if (!isNaN(d.getTime())) return Utilities.formatDate(d,tz,'dd/MM/yyyy');
+  return String(value);
+}
+
+function testDocAuth() {
+  var doc = DocumentApp.create('test-auth');
+  doc.getBody().appendParagraph('ok');
+  doc.saveAndClose();
+  DriveApp.getFileById(doc.getId()).setTrashed(true);
+}
+
+function normalizeToISO_(v, tz) {
+  var y, m, d;
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null;
+    var s = Utilities.formatDate(v, tz, 'yyyy-M-d').split('-');
+    y = Number(s[0]); m = Number(s[1]); d = Number(s[2]);
+  } else if (typeof v === 'string') {
+    var mt = v.trim().match(/(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})/);
+    if (!mt) return null;
+    if (mt[1].length === 4) { y = Number(mt[1]); m = Number(mt[2]); d = Number(mt[3]); }
+    else { d = Number(mt[1]); m = Number(mt[2]); y = Number(mt[3]); }
+  } else {
+    return null;
+  }
+  if (y > 2400) y -= 543;   // พ.ศ. -> ค.ศ. (ใช้กับ Date ด้วย)
+  if (y < 100) y += 2000;
+  return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+
+function getIQCStatus() {
+  var IQC_STATUS_SPREADSHEET_ID = '1_PdZgBGKtPQIxM8y9evSLolslCuijk_qbPCwIDfD2ts';
+  var ss = SpreadsheetApp.openById(IQC_STATUS_SPREADSHEET_ID);
+  var tz = ss.getSpreadsheetTimeZone() || 'Asia/Bangkok';
+  var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  var baseUrl = ss.getUrl();
+
+  var config = [
+    { sheet: 'บันทึกIQC_Chem', label: 'บันทึก IQC Chem' },
+    { sheet: 'บันทึกIQC_DTX', label: 'บันทึก IQC DTX' },
+    { sheet: 'บำรุงรักษา QC เครื่อง CBC', label: 'บำรุงรักษา QC เครื่อง CBC' },
+    { sheet: 'บันทึก Wright stain', label: 'บันทึก Wright stain' },
+    { sheet: 'บำรุงรักษา QC เครื่อง UA_CYBOW', label: 'บำรุงรักษา QC เครื่อง UA_CYBOW' },
+    { sheet: 'บำรุงรักษา QC เครื่อง UA_URIT500B', label: 'บำรุงรักษา QC เครื่อง UA_URIT500B' },
+    { sheet: 'บำรุงรักษา QC เครื่อง FUS1000', label: 'บำรุงรักษา QC เครื่อง FUS1000' },
+    { sheet: 'บำรุงรักษา QC เครื่อง Coagulation C3100', label: 'บำรุงรักษา QC เครื่อง Coagulation C3100' },
+    { sheet: 'บำรุงรักษา QC เครื่อง Maccura i800', label: 'บำรุงรักษา QC เครื่อง Maccura i800' },
+    { sheet: 'บันทึก QC Blood bak', label: 'บันทึก QC Blood bank' }
+
+  ];
+
+  return config.map(function(item) {
+    var sheet = ss.getSheetByName(item.sheet);
+    if (!sheet) {
+      return { name: item.label, done: false, missing: true, message: 'ไม่พบแท็บ: ' + item.sheet, url: baseUrl };
+    }
+    var done = false;
+    var lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      var rng = sheet.getRange(2, 2, lastRow - 1, 1); // คอลัมน์ B
+      var vals = rng.getValues();
+      var disp = rng.getDisplayValues();
+      done = vals.some(function(row, i) {
+        return normalizeToISO_(row[0], tz) === today ||
+               normalizeToISO_(disp[i][0], tz) === today;
+      });
+    }
+    return { name: item.label, done: done, missing: false, url: baseUrl + '#gid=' + sheet.getSheetId() };
+  });
+}

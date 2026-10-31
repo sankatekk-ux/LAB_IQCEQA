@@ -1,0 +1,2525 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลน้ำพอง</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <nav class="bg-blue-800 text-white w-full md:w-64 flex-shrink-0 flex flex-col shadow-lg z-10">
+        <div class="p-5 flex items-center justify-between md:justify-center border-b border-blue-700">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-blue-800 p-2 rounded-full h-10 w-10 flex items-center justify-center font-bold text-xl">
+                    <i class="fa-solid fa-microscope"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm leading-tight">กลุ่มงานเทคนิคการแพทย์</h1>
+                    <p class="text-xs text-blue-200">โรงพยาบาลน้ำพอง</p>
+                </div>
+            </div>
+            <button id="mobileMenuBtn" class="md:hidden text-white focus:outline-none">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <div id="navLinks" class="hidden md:flex flex-col p-4 space-y-2 flex-1 overflow-y-auto">
+
+            <a href="https://www.appsheet.com/start/f8a3ae9c-9c0b-4824-963c-70cb64e2e8cf" 
+              target="_blank" rel="noopener noreferrer"
+              class="nav-btn w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 transition duration-200 text-left text-blue-100">
+                <i class="fa-solid fa-table-cells w-5 text-center"></i>
+                <span>AppLabNamphong</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-auto opacity-60"></i>
+            </a>
+
+            <button onclick="switchTab('iqcStatusTab')" class="nav-btn w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 transition duration-200 text-left text-blue-100">
+                <i class="fa-solid fa-clipboard-check w-5 text-center"></i>
+                <span>ตรวจสอบการทำ IQC</span>
+            </button>
+            <button onclick="switchTab('iqcTab')" class="nav-btn active w-full flex items-center space-x-3 p-3 rounded-lg bg-blue-700 hover:bg-blue-600 transition duration-200 text-left">
+                <i class="fa-solid fa-file-medical w-5 text-center"></i>
+                <span>บันทึกการแก้ไข IQC</span>
+            </button>
+            <button onclick="switchTab('dashboardTab')" class="nav-btn w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 transition duration-200 text-left text-blue-100">
+                <i class="fa-solid fa-chart-line w-5 text-center"></i>
+                <span>Dash board การแก้ไข IQC</span>
+            </button>
+            <button onclick="switchTab('eqaTab')" class="nav-btn w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 transition duration-200 text-left text-blue-100">
+                <i class="fa-solid fa-file-contract w-5 text-center"></i>
+                <span>บันทึกทบทวน EQA</span>
+            </button>
+            <!-- ปุ่มเมนู Dashboard EQA -->
+            <button onclick="switchTab('eqaDashboardTab')" class="nav-btn w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-700 transition duration-200 text-left text-blue-100">
+                <i class="fas fa-chart-line w-5 text-center"></i>
+                <span>Dashboard EQA</span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+
+        <!-- Tab 1: IQC Form -->
+        <div id="iqcTab" class="tab-content fade-in max-w-5xl mx-auto block">
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">ฟอร์มบันทึกการแก้ไข IQC</h2>
+                    <p class="text-gray-500 text-sm mt-1">ระบุรหัสผู้ปฏิบัติงาน 2 หลักเพื่อค้นหาชื่ออัตโนมัติ และเลือกสาขาเพื่อสลับรายการตรวจอย่างรวดเร็ว</p>
+                </div>
+            </div>
+
+                <!-- ค้นหา / แก้ไข IQC -->
+                <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-5 mb-6"><div class="flex items-center justify-between mb-3"><h3 class="font-semibold text-gray-700 flex items-center gap-2"><i class="fa-solid fa-magnifying-glass text-blue-600"></i> ค้นหาข้อมูล IQC เพื่อแก้ไข</h3><span class="text-xs text-gray-400">ค้นหาแล้วกด “แก้ไข” เพื่อโหลดข้อมูลเดิม</span></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"><div><label class="block text-xs font-semibold text-gray-600 mb-1">ตั้งแต่วันที่</label><input type="date" id="iqcEditStartDate" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"></div><div><label class="block text-xs font-semibold text-gray-600 mb-1">ถึงวันที่</label><input type="date" id="iqcEditEndDate" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"></div><div><label class="block text-xs font-semibold text-gray-600 mb-1">สาขา</label><select id="iqcEditSection" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"><option value="">ทุกสาขา</option><option>Chemistry</option><option>Hematology</option><option>Immunology</option><option>Microscopy</option><option>Blood bank</option><option>Microbiology</option></select></div><div><label class="block text-xs font-semibold text-gray-600 mb-1">เครื่องตรวจ</label><input type="text" id="iqcEditMachine" placeholder="เช่น BS800_01" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"></div><div><label class="block text-xs font-semibold text-gray-600 mb-1">คำค้น</label><input type="text" id="iqcEditKeyword" placeholder="รหัส, ผู้ปฏิบัติ, Test, สาเหตุ..." class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"></div></div><div class="flex gap-2 mt-3"><button type="button" onclick="searchIqcForEdit()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button><button type="button" onclick="resetIqcEditSearch()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">ล้าง</button></div><div id="iqcEditResults" class="mt-4 hidden"></div></div>
+            <form id="iqcForm" onsubmit="submitForm(event)">
+
+                <!-- ข้อมูลส่วนหัว Header -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                    <div class="flex items-center space-x-2 mb-4 pb-2 border-b border-gray-100">
+                        <i class="fa-solid fa-user-doctor text-blue-600 animate-pulse"></i>
+                        <h3 class="text-lg font-bold text-red-600">เพิ่มข้อมูลการแก้ไข (IQC)</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผู้ปฏิบัติ (2 ตัวท้าย) *</label>
+                            <div class="relative">
+                                <input type="text" id="operatorId" required maxlength="2" placeholder="เช่น 45" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase text-center font-bold tracking-wider">
+                                <div id="searchSpinner" class="hidden absolute right-3 top-3">
+                                    <svg class="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <span id="operatorSearchStatus" class="text-xs mt-1 block h-4 font-medium"></span>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ปฏิบัติ *</label>
+                            <input type="text" id="operatorName" required readonly placeholder="โปรดระบุรหัสผู้ปฏิบัติงาน..." class="w-full p-2.5 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none transition font-medium">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">วันที่บันทึก *</label>
+                            <input type="date" id="recordDate" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">เวร *</label>
+                            <select id="shift" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white font-medium text-gray-700">
+                                <option value="" disabled selected>เลือกเวร...</option>
+                                <option value="เช้า">เช้า</option>
+                                <option value="บ่าย">บ่าย</option>
+                            </select>
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">สาขา *</label>
+                            <select id="section" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white font-medium text-gray-700">
+                                <option value="" disabled selected>เลือกสาขา...</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Hematology">Hematology</option>
+                                <option value="Immunology">Immunology</option>
+                                <option value="Microscopy">Microscopy</option>
+                                <option value="Blood bank">Blood bank</option>
+                                <option value="Microbiology">Microbiology</option>
+                            </select>
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">เครื่องตรวจ *</label>
+                            <select id="machine" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white font-medium text-gray-700">
+                                <option value="" disabled selected>เลือกเครื่องตรวจ...</option>
+                                <option value="BS800_01">BS800_01</option>
+                                <option value="BS800_02">BS800_02</option>
+                                <option value="BS800_02">BC-7M Series_1</option>
+                                <option value="BS800_02">BC-7M Series_2</option>
+                                <option value="BS800_02">Coag C3510</option>
+                                <option value="BS800_02">Maccura_i800</option>
+                                <option value="BS800_02">FUS3000_HL7</option>
+                                <option value="BS800_02">Urit500B</option>
+                                <option value="BS800_02">Hogen_TropT</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 pb-2 border-b border-gray-100 gap-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-list-check text-blue-600"></i>
+                            <h3 class="text-lg font-semibold text-gray-700">รายการแก้ไข (Line Items)</h3>
+                        </div>
+                    </div>
+
+                    <div id="childItemsContainer" class="space-y-6">
+                        <!-- รายการย่อยจะเรนเดอร์ในจุดนี้ -->
+                    </div>
+                    <button type="button" onclick="addChildItem()" class="mt-6 w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border border-dashed border-blue-300 px-4 py-3 rounded-lg text-sm font-medium transition duration-200 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+                    </button>
+                </div>
+
+                <div class="flex justify-end pt-4 pb-10">
+                    <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-medium shadow-md shadow-blue-500/30 transition duration-200 flex items-center gap-2 text-lg w-full sm:w-auto justify-center">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูลเข้าระบบ
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab 3: IQC Dashboard -->
+        <div id="dashboardTab" class="tab-content hidden fade-in max-w-7xl mx-auto block">
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-blue-600"></i> Dash board การแก้ไข IQC
+                    </h2>
+                    <p class="text-gray-500 text-sm mt-1">วิเคราะห์สถิติ สรุปสาเหตุ และการแก้ไข IQC พร้อมระบบกรองข้อมูลตามช่วงเวลา สาขา และรายการตรวจ</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="loadDashboardData()" class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-rotate text-blue-600" id="dashRefreshIcon"></i> รีเฟรชข้อมูล
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+                <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                    <h3 class="font-semibold text-gray-700 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-filter text-blue-600"></i> ตัวกรองข้อมูล (Filter Data)
+                    </h3>
+                    <button onclick="resetDashboardFilters()" class="text-xs text-blue-600 hover:underline">ล้างตัวกรองทั้งหมด</button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">วันที่เริ่มต้น</label>
+                        <input type="date" id="dashStartDate" onchange="filterDashboardTable()" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">วันที่สิ้นสุด</label>
+                        <input type="date" id="dashEndDate" onchange="filterDashboardTable()" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">สาขา</label>
+                        <select id="dashSectionFilter" onchange="onDashSectionChange()" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="">ทุกสาขา</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Hematology">Hematology</option>
+                            <option value="Immunology">Immunology</option>
+                            <option value="Microscopy">Microscopy</option>
+                            <option value="Blood bank">Blood bank</option>
+                            <option value="Microbiology">Microbiology</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">เครื่องตรวจ</label>
+                        <select id="dashMachineFilter" onchange="filterDashboardTable()" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="">ทุกเครื่องตรวจ</option>
+                            <option value="BS800_01">BS800_01</option>
+                            <option value="BS800_02">BS800_02</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">รายการตรวจ (Test Item)</label>
+                        <select id="dashTestItemFilter" onchange="filterDashboardTable()" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="">ทุกรายการตรวจ</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Westgard Rule</label>
+                        <select id="dashRuleFilter" onchange="filterDashboardTable()" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="">ทุก Rule</option>
+                            <option value="1_3S">1_3S</option>
+                            <option value="2_2S">2_2S</option>
+                            <option value="R_4S">R_4S</option>
+                            <option value="4_1S">4_1S</option>
+                            <option value="10X">10X</option>
+                            <option value="1-2s">1-2s</option>
+                        </select>
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">ค้นหาคำสำคัญ</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i>
+                            <input type="text" id="dashSearchInput" onkeyup="filterDashboardTable()" placeholder="ค้นหาข้อความ, สาเหตุ, ปฏิบัติการแก้ไข..." class="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase">รายการที่กรองได้</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="kpiTotalCount">0</h3>
+                    </div>
+                    <div class="bg-blue-50 text-blue-600 p-3 rounded-xl"><i class="fa-solid fa-list-check text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase">สาเหตุหลักที่พบมากสุด</p>
+                        <h3 class="text-base font-bold text-amber-600 mt-1 truncate max-w-[200px]" id="kpiTopCause">-</h3>
+                    </div>
+                    <div class="bg-amber-50 text-amber-600 p-3 rounded-xl"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase">การแก้ไขหลักที่ใช้บ่อย</p>
+                        <h3 class="text-base font-bold text-green-600 mt-1 truncate max-w-[200px]" id="kpiTopCorrection">-</h3>
+                    </div>
+                    <div class="bg-green-50 text-green-600 p-3 rounded-xl"><i class="fa-solid fa-wrench text-xl"></i></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><i class="fa-solid fa-diagram-project text-blue-600"></i> จำนวนรายการแยกตามสาขา</h3>
+                    <div class="h-64 relative"><canvas id="chartBySection"></canvas></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><i class="fa-solid fa-microchip text-blue-600"></i> จำนวนรายการแยกตามเครื่องตรวจ</h3>
+                    <div class="h-64 relative"><canvas id="chartByMachine"></canvas></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:col-span-2">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><i class="fa-solid fa-vial text-blue-600"></i> จำนวนรายการแยกตามรายการตรวจ (Top 10) <span class="text-xs font-normal text-gray-400">— คลิกแท่งกราฟเพื่อกรองตารางและกราฟสาเหตุ/การแก้ไข</span></h3>
+                    <div class="h-72 relative"><canvas id="chartByTestItem"></canvas></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><i class="fa-solid fa-magnifying-glass-chart text-amber-600"></i> สรุปสาเหตุยอดนิยม (Top 8)</h3>
+                    <div class="h-64 relative"><canvas id="chartByRootCause"></canvas></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><i class="fa-solid fa-screwdriver-wrench text-green-600"></i> ปฏิบัติการแก้ไขยอดนิยม (Top 8)</h3>
+                    <div class="h-64 relative"><canvas id="chartByCorrection"></canvas></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-700 text-sm">ตารางรายละเอียดข้อมูลการแก้ไข IQC</h3>
+                    <span id="dashRecordCount" class="text-xs font-medium text-gray-500">แสดง 0 รายการ</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs md:text-sm">
+                        <thead>
+                            <tr class="bg-blue-800 text-white font-semibold whitespace-nowrap">
+                                <th class="py-3 px-4">วันที่</th>
+                                <th class="py-3 px-4">สาขา</th>
+                                <th class="py-3 px-4">เครื่องตรวจ</th>
+                                <th class="py-3 px-4">รายการตรวจ</th>
+                                <th class="py-3 px-4 text-center">Westgard Rule</th>
+                                <th class="py-3 px-4">Error Type</th>
+                                <th class="py-3 px-4">สรุปสาเหตุ</th>
+                                <th class="py-3 px-4">ปฏิบัติการแก้ไข</th>
+                                <th class="py-3 px-4">ผลการแก้ไข</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardTableBody" class="divide-y divide-gray-100 text-gray-700">
+                            <tr>
+                                <td colspan="9" class="text-center py-8 text-gray-400">
+                                    <i class="fa-solid fa-spinner animate-spin text-2xl mb-2 text-blue-600 block"></i>
+                                    กำลังโหลดข้อมูล Dashboard...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: EQA Form -->
+        <div id="eqaTab" class="tab-content hidden fade-in max-w-5xl mx-auto block">
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">ฟอร์มบันทึกทบทวน EQA-Interlab comparison</h2>
+                    <p class="text-gray-500 text-sm mt-1">บันทึกข้อมูลหลัก (Parent) และข้อมูลรายการทดสอบที่ไม่ผ่านเกณฑ์ (Child)</p>
+                </div>
+            </div>
+
+                <!-- ค้นหา / แก้ไข EQA -->
+                <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-5 mb-6"><div class="flex items-center justify-between mb-3"><h3 class="font-semibold text-gray-700 flex items-center gap-2"><i class="fa-solid fa-magnifying-glass text-blue-600"></i> ค้นหาข้อมูล EQA เพื่อแก้ไข</h3><span class="text-xs text-gray-400">ค้นหาแล้วกด “แก้ไข” เพื่อโหลดข้อมูลเดิม</span></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"><div><label class="block text-xs font-semibold text-gray-600 mb-1">ตั้งแต่วันที่</label><input type="date" id="eqaEditStartDate" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"></div><div><label class="block text-xs font-semibold text-gray-600 mb-1">ถึงวันที่</label><input type="date" id="eqaEditEndDate" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"></div><div><label class="block text-xs font-semibold text-gray-600 mb-1">EQA Program</label><select id="eqaEditProgram" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"><option value="">ทั้งหมด</option><option>Hematology_CBC</option><option>Hematology_Coag</option><option>Chemistry</option><option>Immunology</option><option>Microscopy</option><option>Microbiology</option><option>Blood bank</option></select></div><div><label class="block text-xs font-semibold text-gray-600 mb-1">คำค้น</label><input type="text" id="eqaEditKeyword" placeholder="รหัส, Trial, Test, สาเหตุ..." class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm"></div></div><div class="flex gap-2 mt-3"><button type="button" onclick="searchEqaForEdit()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button><button type="button" onclick="resetEqaEditSearch()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">ล้าง</button></div><div id="eqaEditResults" class="mt-4 hidden"></div></div>
+            <form id="eqaForm" onsubmit="submitEqaForm(event)">
+
+                <!-- ข้อมูลส่วนหัว EQA Parent -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                    <div class="flex items-center space-x-2 mb-4 pb-2 border-b border-gray-100">
+                        <i class="fa-solid fa-file-signature text-blue-600"></i>
+                         <h3 class="text-xl font-bold text-red-600">เพิ่มข้อมูลการทบทวน (EQA)</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ทบทวน *</label>
+                            <input type="date" id="eqaReviewDate" required class="w-full p-2.5 text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">รหัสผู้ทบทวน (2 ตัวท้าย) *</label>
+                            <div class="relative">
+                                <input type="text" id="eqaReviewerId" required maxlength="2" placeholder="เช่น 45" oninput="handleEqaUserLookup(this, 'eqaReviewerName', 'eqaReviewerStatus', 'eqaReviewerSpinner')" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center font-bold tracking-wider">
+                                <div id="eqaReviewerSpinner" class="hidden absolute right-3 top-3">
+                                    <i class="fa-solid fa-spinner animate-spin text-blue-600"></i>
+                                </div>
+                            </div>
+                            <span id="eqaReviewerStatus" class="text-xs mt-1 block h-4 font-medium"></span>
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้ทบทวน *</label>
+                            <input type="text" id="eqaReviewerName" required readonly placeholder="โปรดระบุรหัสผู้ทบทวน..." class="w-full p-2.5 text-gray-900 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none transition font-medium">
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">EQA Program *</label>
+                            <select id="eqaProgram" required onchange="updateEqaTestOptions()" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white font-medium text-gray-1000">
+                                <option value="" disabled selected>เลือก EQA Program...</option>
+                                <option value="Hematology_CBC">Hematology_CBC</option>
+                                <option value="Hematology_Coag">Hematology_Coag</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Immunology">Immunology</option>
+                                <option value="Microscopy">Microscopy</option>
+                                <option value="Microbiology">Microbiology</option>
+                                <option value="Blood bank">Blood bank</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Trial Number *</label>
+                            <input type="text" id="eqaTrialNumber" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-gray-1000">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ทดสอบ EQA *</label>
+                            <input type="date" id="eqaTestDate" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-gray-1000">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">จำนวน Item ทั้งหมด *</label>
+                            <input type="number" id="eqaTotalItems" required min="1" step="1" oninput="validateEqaItems()" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-gray-1000">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">จำนวน Item ที่ผ่านเกณฑ์ *</label>
+                            <input type="number" id="eqaPassedItems" required min="0" step="1" oninput="validateEqaItems()" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-gray-1000">
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">แนบไฟล์ EQA (PDF, JPG, PNG)</label>
+                            <input type="file" id="eqaFile" accept=".pdf, .jpg, .jpeg, .png" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
+                        </div>
+
+                        <div class="lg:col-span-4 mt-2 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสหัวหน้า(สำหรับหัวหน้า) </label>
+                                <div class="relative">
+                                    <input type="text" id="eqaHeadId" maxlength="2" placeholder="เช่น 90" oninput="handleEqaUserLookup(this, 'eqaHeadName', 'eqaHeadStatus', 'eqaHeadSpinner')" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition uppercase text-center font-bold tracking-wider">
+                                    <div id="eqaHeadSpinner" class="hidden absolute right-3 top-3">
+                                        <i class="fa-solid fa-spinner animate-spin text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <span id="eqaHeadStatus" class="text-xs mt-1 block h-4 font-medium"></span>
+                            </div>
+
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อหัวหน้า </label>
+                                <input type="text" id="eqaHeadName" readonly placeholder="โปรดระบุรหัสหัวหน้า..." class="w-full p-2.5 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none transition font-medium">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">วันที่หัวหน้ารับทราบ (สำหรับหัวหน้า) </label>
+                                <input type="date" id="eqaHeadAckDate" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ข้อมูลส่วนย่อย EQA Child Nopass -->
+                <div id="eqaChildSection" class="bg-white rounded-xl shadow-sm border border-red-100 p-6 mb-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 pb-2 border-b border-red-100 gap-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-vial-circle-check text-red-500"></i>
+                            <h3 class="text-lg font-semibold text-gray-700">รายการทบทวนที่ไม่ผ่านเกณฑ์ (EQA Child_Nopass)</h3>
+                        </div>
+                    </div>
+
+                    <div id="eqaErrorAlert" class="hidden mb-4 p-3 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg text-sm font-medium flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>หมายเหตุ: จำนวน Item ที่ผ่านเกณฑ์ ต้องไม่เกินจำนวน Item ทั้งหมด</span>
+                    </div>
+
+                    <div id="eqaChildItemsContainer" class="space-y-6">
+                        <!-- รายการย่อย EQA จะเรนเดอร์ในจุดนี้ -->
+                    </div>
+                        <button type="button" onclick="addEqaChildItem()" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> เพิ่มรายการที่ตกเกณฑ์
+                        </button>
+
+                </div>
+
+                <div id="eqaAllPassedAlert" class="hidden mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-xl text-sm font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>ผ่านเกณฑ์ครบทุกรายการ (100%) — ไม่ต้องกรอกรายการที่ไม่ผ่านเกณฑ์ สามารถบันทึกข้อมูลได้เลย</span>
+                </div>
+
+                <div class="flex justify-end pt-4 pb-10">
+                    <button type="submit" id="submitEqaBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-medium shadow-md shadow-blue-500/30 transition duration-200 flex items-center gap-2 text-lg w-full sm:w-auto justify-center">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูล EQA เข้าระบบ
+                    </button>
+                </div>
+            </form>
+        </div>
+
+                <!-- Tab 5: EQA Dashboard -->
+        <div id="eqaDashboardTab" class="tab-content hidden fade-in max-w-7xl mx-auto">
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-blue-600"></i> Dashboard EQA
+                    </h2>
+                    <p class="text-gray-500 text-sm mt-1">วิเคราะห์สถิติ สรุปสาเหตุ และการแก้ไข EQA ที่ไม่ผ่านเกณฑ์</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="loadEqaDashboardData()" class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-rotate text-blue-600" id="eqaDashRefreshIcon"></i> รีเฟรชข้อมูล
+                    </button>
+                </div>
+            </div>
+
+            <!-- ตัวกรองข้อมูล -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+                <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                    <h3 class="font-semibold text-gray-700 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-filter text-blue-600"></i> ตัวกรองข้อมูล
+                    </h3>
+                </div>
+                
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                      <label class="block text-xs font-semibold text-gray-600 mb-1">ตั้งแต่วันที่</label>
+                      <input type="date" id="eqaDashStartDate" onchange="filterEqaDashboardTable()"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  </div>
+                  <div>
+                      <label class="block text-xs font-semibold text-gray-600 mb-1">ถึงวันที่</label>
+                      <input type="date" id="eqaDashEndDate" onchange="filterEqaDashboardTable()"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  </div>
+                  <div>
+                      <label class="block text-xs font-semibold text-gray-600 mb-1">EQA Program</label>
+                      <select id="eqaDashProgramFilter" onchange="filterEqaDashboardTable()"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                          <option value="">ทั้งหมด</option>
+                                <option value="Hematology_CBC">Hematology_CBC</option>
+                                <option value="Hematology_Coag">Hematology_Coag</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Immunology">Immunology</option>
+                                <option value="Microscopy">Microscopy</option>
+                                <option value="Microbiology">Microbiology</option>
+                                <option value="Blood bank">Blood bank</option>
+                      </select>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-semibold text-gray-600 mb-1">ค้นหาคำสำคัญ</label>
+                      <input type="text" id="eqaDashSearchInput" onkeyup="filterEqaDashboardTable()"
+                            placeholder="Test, สาเหตุ, การแก้ไข..."
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  </div>
+              </div>
+
+              <div class="flex items-center gap-4 mt-3">
+                  <label class="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                      <input type="checkbox" id="eqaDashOnlyFail" onchange="filterEqaDashboardTable()" class="rounded text-blue-600">
+                      แสดงเฉพาะรายการที่ <span class="font-semibold text-red-600">ไม่ผ่าน</span>
+                  </label>
+                  <button onclick="resetEqaDashFilter()" class="text-xs text-gray-500 hover:text-blue-700 underline">
+                      <i class="fa-solid fa-rotate-left mr-1"></i>ล้างตัวกรอง
+                  </button>
+              </div>
+            </div>
+
+            <!-- สรุป KPI -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase">จำนวนรายการ (ไม่ผ่าน)</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1" id="eqaKpiTotal">0</h3>
+                    </div>
+                    <div class="bg-red-50 text-red-500 p-3 rounded-xl"><i class="fa-solid fa-vial-circle-check text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase">สรุปปัญหาหลักที่พบบ่อย</p>
+                        <h3 class="text-base font-bold text-amber-600 mt-1 truncate max-w-[200px]" id="eqaKpiTopConclusion">-</h3>
+                    </div>
+                    <div class="bg-amber-50 text-amber-600 p-3 rounded-xl"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase">โปรแกรมที่พบปัญหามากสุด</p>
+                        <h3 class="text-base font-bold text-blue-600 mt-1 truncate max-w-[200px]" id="eqaKpiTopProgram">-</h3>
+                    </div>
+                    <div class="bg-blue-50 text-blue-600 p-3 rounded-xl"><i class="fa-solid fa-microscope text-xl"></i></div>
+                </div>
+            </div>
+
+            <!-- กราฟ EQA -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">สรุปปัญหา (Conclusion)</h3>
+                    <div class="h-64 relative"><canvas id="chartEqaConclusion"></canvas></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">แยกตาม EQA Program</h3>
+                    <div class="h-64 relative"><canvas id="chartEqaProgram"></canvas></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+                <div class="flex flex-col md:flex-row md:items-end gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มต้น</label>
+                    <input id="eqaSummaryStartDate" type="date"
+                      class="border border-gray-300 rounded-lg px-3 py-2">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">วันที่สิ้นสุด</label>
+                    <input id="eqaSummaryEndDate" type="date"
+                      class="border border-gray-300 rounded-lg px-3 py-2">
+                  </div>
+
+                  <button type="button" onclick="loadEqaPassRateSummary()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    สรุปข้อมูล
+                  </button>
+                </div>
+              </div>
+
+              <!-- ร้อยละEQAผ่านเกณฑ์ -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                  <p class="text-sm text-gray-500">ร้อยละผ่านเกณฑ์รวม</p>
+                  <p id="eqaOverallPassRate" class="text-3xl font-bold text-green-600 mt-1">0%</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                  <p class="text-sm text-gray-500">Item ผ่านเกณฑ์</p>
+                  <p id="eqaOverallPassedItems" class="text-3xl font-bold text-blue-600 mt-1">0</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                  <p class="text-sm text-gray-500">Item ทั้งหมด</p>
+                  <p id="eqaOverallTotalItems" class="text-3xl font-bold text-gray-800 mt-1">0</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                  <h3 class="font-semibold text-gray-800 mb-4">ร้อยละผ่านเกณฑ์ตาม EQA Program</h3>
+                  <div class="h-72">
+                    <canvas id="eqaPassRateChart"></canvas>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div class="p-5 pb-3">
+                    <h3 class="font-semibold text-gray-800">สรุปตาม EQA Program</h3>
+                  </div>
+
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead class="bg-blue-800 text-white">
+                        <tr>
+                          <th class="text-left px-4 py-3">EQA Program</th>
+                          <th class="text-center px-4 py-3">ผ่าน</th>
+                          <th class="text-center px-4 py-3">ทั้งหมด</th>
+                          <th class="text-center px-4 py-3">ร้อยละ</th>
+                        </tr>
+                      </thead>
+                      <tbody id="eqaPassRateTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+
+            <!-- ตาราง EQA -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-700 text-sm">รายละเอียด EQA </h3>
+                    <span id="eqaDashRecordCount" class="text-xs font-medium text-gray-500">แสดง 0 รายการ</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs md:text-sm">
+                        <thead>
+                           <tr class="bg-blue-800 text-white font-semibold whitespace-nowrap">
+
+                              <th class="py-3 px-4">วันที่ทบทวน</th>
+
+                              <th class="py-3 px-4">Program</th>
+
+                              <th class="py-3 px-4 text-center">trialNumber</th>
+
+                              <th class="py-3 px-4 text-center">สถานะ</th>
+
+                              <th class="py-3 px-4 text-red-300">Test (ไม่ผ่าน)</th>
+
+                              <th class="py-3 px-4">ทบทวน IQC</th>
+
+                              <th class="py-3 px-4">จำนวนตัวอย่าง</th>
+
+                              <th class="py-3 px-4">กระทบผู้ป่วย</th>
+
+                              <th class="py-3 px-4">สรุปปัญหา</th>
+
+                              <th class="py-3 px-4">การแก้ไข</th>
+                                <th class="py-3 px-4 text-center">จัดการ</th>
+
+                            </tr>
+                        </thead>
+                        <tbody id="eqaDashboardTableBody" class="divide-y divide-gray-100 text-gray-700">
+                            <tr><td colspan="7" class="text-center py-8 text-gray-400">กำลังโหลดข้อมูล...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Tab: Dashboard ตรวจสอบการทำ IQC รายวัน -->
+        <section id="iqcStatusTab" class="tab-content hidden fade-in max-w-7xl mx-auto">
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-blue-600"></i> ตรวจสอบการทำ IQC</h2>
+                    <p class="text-gray-500 text-sm mt-1">ตรวจวันที่ปัจจุบันในคอลัมน์ B ของแต่ละแท็บ · คลิกการ์ดเพื่อเปิดแท็บกรอกข้อมูล</p>
+                </div>
+                <button type="button" onclick="loadIqcStatusDashboard()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm"><i id="iqcStatusRefreshIcon" class="fa-solid fa-rotate mr-2"></i>รีเฟรช</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">ทำแล้ววันนี้ <strong id="iqcStatusDoneCount" class="text-green-600 text-xl ml-2">-</strong></div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">ยังไม่ทำ <strong id="iqcStatusPendingCount" class="text-red-600 text-xl ml-2">-</strong></div>
+            </div>
+            <div id="iqcStatusCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="col-span-full bg-white rounded-xl p-6 text-center text-gray-500">กดรีเฟรชเพื่อโหลดสถานะ</div>
+            </div>
+            <p id="iqcStatusUpdatedAt" class="text-xs text-gray-400 mt-4"></p>
+        </section>
+
+
+    </main>
+
+
+
+    <script>
+        document.getElementById('recordDate').valueAsDate = new Date();
+
+        let childCount = 0;
+        let testListMap = {};
+        let eqaTestProgramMap = {};
+        let rawDashboardData = [];
+        let iqcEditParentId = null;
+        let eqaEditParentId = null;
+        let eqaEditAttachment = null;
+
+        let chartInstSection = null;
+        let chartInstMachine = null;
+        let chartInstTestItem = null;
+        let chartInstRootCause = null;
+        let chartInstCorrection = null;
+
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('hidden');
+        });
+
+        // กำหนดตัวแปรสำหรับ EQA Dashboard
+        let rawEqaDashboardData = [];
+        let chartInstEqaConclusion = null;
+        let chartInstEqaProgram = null;
+
+        // ฟังก์ชันโหลดข้อมูล EQA Dashboard
+        function loadEqaDashboardData() {
+            const tbody = document.getElementById('eqaDashboardTableBody');
+            const refreshIcon = document.getElementById('eqaDashRefreshIcon');
+
+            if(refreshIcon) refreshIcon.classList.add('animate-spin');
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-400"><i class="fa-solid fa-spinner animate-spin text-2xl mb-2 text-blue-600 block"></i> กำลังดึงข้อมูล...</td></tr>`;
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if(refreshIcon) refreshIcon.classList.remove('animate-spin');
+                        if (response.status === 'success') {
+                            rawEqaDashboardData = response.data || [];
+                            filterEqaDashboardTable();
+                        } else {
+                            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-red-500">${response.message}</td></tr>`;
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        if(refreshIcon) refreshIcon.classList.remove('animate-spin');
+                        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-red-500">เกิดข้อผิดพลาด: ${err}</td></tr>`;
+                    })
+                    .getEqaDashboardData();
+                      // เพิ่มตรงนี้ แสดงร้อยละผ่านเกณฑ์
+                    loadEqaPassRateSummary();
+            } else {
+                // Mock Data สำหรับโหมด Preview
+                setTimeout(() => {
+                    if(refreshIcon) refreshIcon.classList.remove('animate-spin');
+                    rawEqaDashboardData = [
+                        { reviewDate: "2026-08-01", program: "Chemistry", testNopass: "Glucose", probAmount: "1 ตัวอย่าง", impact: "ไม่มี", conclusion: "Technical problem", correction: "Re-calibrate เครื่อง" },
+                        { reviewDate: "2026-07-28", program: "Hematology_CBC", testNopass: "Hb", probAmount: "ทุกๆ ตัวอย่าง", impact: "มี", conclusion: "Problem with PT material", correction: "เปลี่ยนน้ำยา Lot ใหม่" }
+                    ];
+                    filterEqaDashboardTable();
+                }, 500);
+            }
+        }
+
+
+        //จุดเพิ่ม
+        // แปลงวันที่ของแถวเป็น timestamp (เที่ยงคืนตามวัน)
+        function getEqaItemTime(item) {
+          if (item.timeVal && item.timeVal > 0) {
+              const d = new Date(item.timeVal);
+              return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+          }
+          const d2 = new Date(item.reviewDate);
+          return isNaN(d2.getTime()) ? null : new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
+        }
+
+        function filterEqaDashboardTable() {
+            const programFilter = document.getElementById('eqaDashProgramFilter').value;
+            const searchText    = document.getElementById('eqaDashSearchInput').value.toLowerCase().trim();
+            const startVal      = (document.getElementById('eqaDashStartDate') || {}).value || '';
+            const endVal        = (document.getElementById('eqaDashEndDate')   || {}).value || '';
+            const onlyFail      = (document.getElementById('eqaDashOnlyFail') || {}).checked || false;
+
+            const startTime = startVal ? new Date(startVal + 'T00:00:00').getTime() : null;
+            const endTime   = endVal   ? new Date(endVal   + 'T00:00:00').getTime() : null;
+
+            const filtered = rawEqaDashboardData.filter(item => {
+                const matchProgram = !programFilter || item.program === programFilter;
+                const matchSearch  = !searchText || Object.values(item).some(v => String(v).toLowerCase().includes(searchText));
+                const matchFail    = !onlyFail || item.isFail === true;
+
+                let matchDate = true;
+                if (startTime !== null || endTime !== null) {
+                    const t = getEqaItemTime(item);
+                    if (t === null) matchDate = false;                       // ไม่มีวันที่ = ตัดออกเมื่อกรองวันที่
+                    else {
+                        if (startTime !== null && t < startTime) matchDate = false;
+                        if (endTime   !== null && t > endTime)   matchDate = false;
+                    }
+                }
+                return matchProgram && matchSearch && matchDate && matchFail;
+            });
+
+            renderEqaDashboardTable(filtered);
+            // กราฟ/สถิติ ให้นับเฉพาะรายการที่ไม่ผ่านเท่านั้น
+            updateEqaDashboardAnalytics(filtered.filter(i => i.isFail));
+        }
+
+        function resetEqaDashFilter() {
+            ['eqaDashStartDate','eqaDashEndDate','eqaDashSearchInput','eqaDashProgramFilter']
+                .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            const cb = document.getElementById('eqaDashOnlyFail');
+            if (cb) cb.checked = false;
+            filterEqaDashboardTable();
+        }
+
+        function renderEqaDashboardTable(data) {
+            const tbody = document.getElementById('eqaDashboardTableBody');
+            const countLabel = document.getElementById('eqaDashRecordCount');
+
+            const failCount = data.filter(i => i.isFail).length;
+            const passCount = data.length - failCount;
+            if (countLabel) {
+                countLabel.innerHTML = `แสดง ${data.length} รายการ
+                    <span class="text-red-600 font-semibold ml-1">(ไม่ผ่าน ${failCount})</span>
+                    <span class="text-green-600 font-semibold ml-1">(ผ่าน ${passCount})</span>`;
+            }
+
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" class="text-center py-6 text-gray-500">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const fail = item.isFail === true;
+                const tr = document.createElement('tr');
+                tr.className = (fail ? "hover:bg-red-50" : "bg-green-50/40 hover:bg-green-50")
+                            + " transition duration-150 border-b border-gray-50";
+
+                const statusBadge = fail
+                    ? '<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold whitespace-nowrap">ไม่ผ่าน</span>'
+                    : '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold whitespace-nowrap">ผ่านทุกรายการ</span>';
+
+                const impactCell = !fail ? '<span class="text-gray-400">-</span>'
+                    : (item.impact === 'มี'
+                        ? '<span class="px-2 py-1 bg-red-100 text-red-700 rounded">มี</span>'
+                        : '<span class="px-2 py-1 bg-green-100 text-green-700 rounded">ไม่มี</span>');
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 whitespace-nowrap">${item.reviewDate || '-'}</td>
+                    <td class="py-3 px-4 font-medium text-blue-700">${item.program || '-'}</td>
+                    <td class="py-3 px-4 text-center text-xs">${item.trialNumber || '-'}</td>
+                    <td class="py-3 px-4 text-center">${statusBadge}</td>
+                    <td class="py-3 px-4 font-bold ${fail ? 'text-red-600' : 'text-gray-400'}">${fail ? (item.testNopass || '-') : '-'}</td>
+                    <td class="py-3 px-4 text-xs">${fail ? (item.iqcReview || '-') : '-'}</td>
+                    <td class="py-3 px-4 text-xs">${fail ? (item.probAmount || '-') : '-'}</td>
+                    <td class="py-3 px-4 text-xs text-center">${impactCell}</td>
+                    <td class="py-3 px-4 text-sm text-amber-600">${fail ? (item.conclusion || '-') : '-'}</td>
+                    <td class="py-3 px-4 text-sm text-gray-700">${fail ? (item.correction || '-') : '-'}</td>\n                    <td class="py-3 px-4 text-center whitespace-nowrap">\n                        <button type="button" onclick="generateEqaPdfFromClient('${esc(item.parentId)}', false)" class="inline-flex items-center gap-1 px-2.5 py-1.5 mr-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-medium" title="สร้าง PDF">📄 PDF</button>\n                        <button type="button" onclick="loadEqaForEdit('${esc(item.parentId)}')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-medium" title="แก้ไข">✏️ แก้ไข</button>\n                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+      //สิ้นสุดจุดเพิ่ม
+
+
+
+        function updateEqaDashboardAnalytics(data) {
+            document.getElementById('eqaKpiTotal').innerText = data.length;
+
+            const conclusionCounts = {};
+            const programCounts = {};
+
+            data.forEach(item => {
+                if(item.conclusion) conclusionCounts[item.conclusion] = (conclusionCounts[item.conclusion] || 0) + 1;
+                if(item.program) programCounts[item.program] = (programCounts[item.program] || 0) + 1;
+            });
+
+            const getTop = (obj) => Object.entries(obj).sort((a,b) => b[1] - a[1]);
+            const sortedConclusions = getTop(conclusionCounts);
+            const sortedPrograms = getTop(programCounts);
+
+            document.getElementById('eqaKpiTopConclusion').innerText = sortedConclusions.length > 0 ? `${sortedConclusions[0][0]} (${sortedConclusions[0][1]})` : '-';
+            document.getElementById('eqaKpiTopProgram').innerText = sortedPrograms.length > 0 ? `${sortedPrograms[0][0]} (${sortedPrograms[0][1]})` : '-';
+
+            // เรนเดอร์กราฟ (นำฟังก์ชันจาก IQC มาปรับใช้)
+            renderPieChart('chartEqaProgram', sortedPrograms.map(i => i[0]), sortedPrograms.map(i => i[1]), chartInstEqaProgram, (chart) => chartInstEqaProgram = chart, ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6']);
+            renderHorizontalBarChart('chartEqaConclusion', sortedConclusions.map(i => i[0]), sortedConclusions.map(i => i[1]), 'จำนวน', '#ef4444', chartInstEqaConclusion, (chart) => chartInstEqaConclusion = chart);
+        }
+
+
+
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-700', 'text-white');
+                btn.classList.add('text-blue-100');
+            });
+
+            const clickedBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+            if(clickedBtn) {
+                clickedBtn.classList.remove('text-blue-100');
+                clickedBtn.classList.add('bg-blue-700', 'text-white');
+            }
+
+            if(window.innerWidth < 768) {
+                document.getElementById('navLinks').classList.add('hidden');
+            }
+
+            if(tabId === 'dashboardTab') {
+                loadDashboardData();
+            }
+            if(tabId === 'iqcStatusTab') {
+                loadIqcStatusDashboard();
+            }
+          
+            if (tabId === 'eqaDashboardTab') {
+                loadEqaDashboardData();
+            }
+           }
+
+        function onDashSectionChange() {
+            const section = document.getElementById('dashSectionFilter').value;
+            populateDashboardTestDropdown(section);
+            filterDashboardTable();
+        }
+
+        function populateDashboardTestDropdown(selectedSection) {
+            const testDropdown = document.getElementById('dashTestItemFilter');
+            testDropdown.innerHTML = '<option value="">ทุกรายการตรวจ</option>';
+
+            let items = [];
+            if (selectedSection && testListMap[selectedSection]) {
+                items = testListMap[selectedSection];
+            } else {
+                Object.values(testListMap).forEach(arr => {
+                    arr.forEach(t => { if(!items.includes(t)) items.push(t); });
+                });
+            }
+
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                testDropdown.appendChild(opt);
+            });
+        }
+
+        function resetDashboardFilters() {
+            document.getElementById('dashStartDate').value = '';
+            document.getElementById('dashEndDate').value = '';
+            document.getElementById('dashSectionFilter').value = '';
+            document.getElementById('dashMachineFilter').value = '';
+            document.getElementById('dashTestItemFilter').value = '';
+            document.getElementById('dashRuleFilter').value = '';
+            document.getElementById('dashSearchInput').value = '';
+            populateDashboardTestDropdown('');
+            filterDashboardTable();
+        }
+
+        function loadDashboardData() {
+            const tbody = document.getElementById('dashboardTableBody');
+            const refreshIcon = document.getElementById('dashRefreshIcon');
+
+            if(refreshIcon) refreshIcon.classList.add('animate-spin');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="13" class="text-center py-8 text-gray-400">
+                        <i class="fa-solid fa-spinner animate-spin text-2xl mb-2 text-blue-600 block"></i>
+                        กำลังดึงข้อมูลการแก้ไข IQC ล่าสุด...
+                    </td>
+                </tr>
+            `;
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if(refreshIcon) refreshIcon.classList.remove('animate-spin');
+                        if (response.status === 'success') {
+                            rawDashboardData = response.data || [];
+                            populateDashboardTestDropdown('');
+                            filterDashboardTable();
+                        } else {
+                            tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-red-500">${response.message}</td></tr>`;
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        if(refreshIcon) refreshIcon.classList.remove('animate-spin');
+                        tbody.innerHTML = `<tr><td colspan="13" class="text-center py-6 text-red-500">เกิดข้อผิดพลาด: ${err}</td></tr>`;
+                    })
+                    .getIqcDashboardData();
+            } else {
+                setTimeout(() => {
+                    if(refreshIcon) refreshIcon.classList.remove('animate-spin');
+                    rawDashboardData = [
+                        { recordDate: "2026-07-21", section: "Chemistry", machine: "BS800_01", testItem: "Glucose (น้ำตาล)", westgard: "1_3S", errorType: "Random error", reagentStatus: "ปกติ", controlStatus: "Lot ใหม่", standardStatus: "ปกติ", instrumentStatus: "ปกติ", rootCause: "Control lot ใหม่, น้ำยาเสื่อม", correction: "เปลี่ยน Control, Run Control", result: "แก้ไขได้" },
+                        { recordDate: "2026-07-20", section: "Hematology", machine: "BS800_02", testItem: "CBC (ความสมบูรณ์เม็ดเลือด)", westgard: "2_2S", errorType: "Systemic error", reagentStatus: "เหลือน้อย", controlStatus: "ปกติ", standardStatus: "ปกติ", instrumentStatus: "Probe สกปรก", rootCause: "Probe สกปรก", correction: "ล้าง Probe, Run Control", result: "แก้ไขได้" },
+                        { recordDate: "2026-07-19", section: "Chemistry", machine: "BS800_01", testItem: "Cholesterol (ไขมัน)", westgard: "4_1S", errorType: "Systemic error", reagentStatus: "ปกติ", controlStatus: "ปกติ", standardStatus: "ปกติ", instrumentStatus: "ปกติ", rootCause: "น้ำยาเสื่อม", correction: "เปลี่ยน น้ำยา, Run Calibrate", result: "แก้ไขได้" },
+                        { recordDate: "2026-07-18", section: "Immunology", machine: "BS800_01", testItem: "HBsAg (ตับอักเสบบี)", westgard: "1-2s", errorType: "Random error", reagentStatus: "Lot เดิม แต่เปิดใหม่", controlStatus: "ปกติ", standardStatus: "ปกติ", instrumentStatus: "ปกติ", rootCause: "น้ำยาเสื่อม", correction: "เปลี่ยน น้ำยา", result: "แก้ไขได้" }
+                    ];
+                    populateDashboardTestDropdown('');
+                    filterDashboardTable();
+                }, 500);
+            }
+        }
+
+        function filterDashboardTable() {
+            const startDate = document.getElementById('dashStartDate').value;
+            const endDate = document.getElementById('dashEndDate').value;
+            const sectionFilter = document.getElementById('dashSectionFilter').value;
+            const machineFilter = document.getElementById('dashMachineFilter').value;
+            const testItemFilter = document.getElementById('dashTestItemFilter').value;
+            const ruleFilter = document.getElementById('dashRuleFilter').value;
+            const searchText = document.getElementById('dashSearchInput').value.toLowerCase().trim();
+
+            const filtered = rawDashboardData.filter(item => {
+                const itemDate = item.recordDate || '';
+                const matchStartDate = !startDate || itemDate >= startDate;
+                const matchEndDate = !endDate || itemDate <= endDate;
+                const matchSection = !sectionFilter || item.section === sectionFilter;
+                const matchMachine = !machineFilter || item.machine === machineFilter;
+                const matchTestItem = !testItemFilter || item.testItem === testItemFilter;
+                const matchRule = !ruleFilter || item.westgard === ruleFilter;
+                const matchSearch = !searchText || Object.values(item).some(val => String(val).toLowerCase().includes(searchText));
+
+                return matchStartDate && matchEndDate && matchSection && matchMachine && matchTestItem && matchRule && matchSearch;
+            });
+
+            renderDashboardTable(filtered);
+            updateDashboardAnalytics(filtered);
+        }
+
+        function renderDashboardTable(data) {
+            const tbody = document.getElementById('dashboardTableBody');
+            const countLabel = document.getElementById('dashRecordCount');
+
+            if (countLabel) countLabel.innerText = `แสดง ${data.length} รายการ`;
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="text-center py-6 text-gray-500">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-50 transition duration-150 border-b border-gray-50";
+
+                let ruleClass = "bg-gray-100 text-gray-600";
+                if(item.westgard && item.westgard !== "-") {
+                    ruleClass = "bg-red-100 text-red-700 font-semibold border border-red-200";
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 whitespace-nowrap">${item.recordDate || '-'}</td>
+                    <td class="py-3 px-4 whitespace-nowrap font-medium text-blue-700">${item.section || '-'}</td>
+                    <td class="py-3 px-4 whitespace-nowrap">${item.machine || '-'}</td>
+                    <td class="py-3 px-4 font-medium">${item.testItem || '-'}</td>
+                    <td class="py-3 px-4 text-center whitespace-nowrap"><span class="px-2 py-1 rounded text-xs ${ruleClass}">${item.westgard || '-'}</span></td>
+                    <td class="py-3 px-4 text-xs whitespace-nowrap">${item.errorType || '-'}</td>
+                    <td class="py-3 px-4 text-sm text-amber-600">${item.rootCause || '-'}</td>
+                    <td class="py-3 px-4 text-sm text-green-600">${item.correction || '-'}</td>
+                    <td class="py-3 px-4 text-sm font-semibold text-gray-700">${item.result || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateDashboardAnalytics(data) {
+            const countEl = document.getElementById('kpiTotalCount');
+            if(countEl) countEl.innerText = data.length;
+
+            const sectionCounts = {};
+            const machineCounts = {};
+            const testItemCounts = {};
+            const causeCounts = {};
+            const correctionCounts = {};
+
+            data.forEach(item => {
+                if(item.section) sectionCounts[item.section] = (sectionCounts[item.section] || 0) + 1;
+                if(item.machine) machineCounts[item.machine] = (machineCounts[item.machine] || 0) + 1;
+                if(item.testItem) testItemCounts[item.testItem] = (testItemCounts[item.testItem] || 0) + 1;
+
+                if (item.rootCause) {
+                    item.rootCause.split(',').forEach(c => {
+                        const cause = c.trim();
+                        if (cause) causeCounts[cause] = (causeCounts[cause] || 0) + 1;
+                    });
+                }
+
+                if (item.correction) {
+                    item.correction.split(',').forEach(c => {
+                        const corr = c.trim();
+                        if (corr) correctionCounts[corr] = (correctionCounts[corr] || 0) + 1;
+                    });
+                }
+            });
+
+            const getTopN = (obj, n) => Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, n);
+
+            const sortedCauses = getTopN(causeCounts, 8);
+            const sortedCorrections = getTopN(correctionCounts, 8);
+            const sortedTestItems = getTopN(testItemCounts, 10);
+
+            const causeEl = document.getElementById('kpiTopCause');
+            const corrEl = document.getElementById('kpiTopCorrection');
+            if(causeEl) causeEl.innerText = sortedCauses.length > 0 ? `${sortedCauses[0][0]} (${sortedCauses[0][1]})` : '-';
+            if(corrEl) corrEl.innerText = sortedCorrections.length > 0 ? `${sortedCorrections[0][0]} (${sortedCorrections[0][1]})` : '-';
+
+            renderPieChart('chartBySection', Object.keys(sectionCounts), Object.values(sectionCounts), chartInstSection, (chart) => chartInstSection = chart, ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#64748b']);
+            renderPieChart('chartByMachine', Object.keys(machineCounts), Object.values(machineCounts), chartInstMachine, (chart) => chartInstMachine = chart, ['#0ea5e9', '#ec4899', '#14b8a6', '#f43f5e']);
+            renderInteractiveBarChart('chartByTestItem', sortedTestItems.map(i => i[0]), sortedTestItems.map(i => i[1]), 'ความถี่ที่พบ', '#8b5cf6', chartInstTestItem, (chart) => chartInstTestItem = chart);
+            renderHorizontalBarChart('chartByRootCause', sortedCauses.map(i => i[0]), sortedCauses.map(i => i[1]), 'จำนวน', '#f59e0b', chartInstRootCause, (chart) => chartInstRootCause = chart);
+            renderHorizontalBarChart('chartByCorrection', sortedCorrections.map(i => i[0]), sortedCorrections.map(i => i[1]), 'จำนวน', '#10b981', chartInstCorrection, (chart) => chartInstCorrection = chart);
+        }
+
+        function renderPieChart(canvasId, labels, dataVals, instanceVar, setInstance, colorPalette) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            if (instanceVar) instanceVar.destroy();
+            const ctx = canvas.getContext('2d');
+            const newChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+                    datasets: [{ data: dataVals.length ? dataVals : [1], backgroundColor: labels.length ? colorPalette : ['#e2e8f0'] }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } }
+                }
+            });
+            setInstance(newChart);
+        }
+
+        function renderInteractiveBarChart(canvasId, labels, dataVals, labelName, color, instanceVar, setInstance) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            if (instanceVar) instanceVar.destroy();
+            const ctx = canvas.getContext('2d');
+            const newChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+                    datasets: [{
+                        label: labelName,
+                        data: dataVals.length ? dataVals : [0],
+                        backgroundColor: color,
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#6d28d9'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { footer: () => 'คลิกเพื่อกรองรายการนี้' } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length > 0) {
+                            const dataIndex = elements[0].index;
+                            const clickedLabel = labels[dataIndex];
+                            if(clickedLabel !== 'ไม่มีข้อมูล') {
+                                const testDropdown = document.getElementById('dashTestItemFilter');
+                                let optionExists = Array.from(testDropdown.options).some(opt => opt.value === clickedLabel);
+                                if(optionExists) {
+                                    testDropdown.value = clickedLabel;
+                                    filterDashboardTable();
+                                    testDropdown.scrollIntoView({behavior: "smooth", block: "center"});
+                                }
+                            }
+                        } else {
+                            document.getElementById('dashTestItemFilter').value = "";
+                            filterDashboardTable();
+                        }
+                    },
+                    onHover: (event, chartElement) => {
+                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    }
+                }
+            });
+            setInstance(newChart);
+        }
+
+        function renderHorizontalBarChart(canvasId, labels, dataVals, labelName, color, instanceVar, setInstance) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            if (instanceVar) instanceVar.destroy();
+            const ctx = canvas.getContext('2d');
+            const newChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+                    datasets: [{ label: labelName, data: dataVals.length ? dataVals : [0], backgroundColor: color, borderRadius: 4 }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { font: { size: 10 } } } }
+                }
+            });
+            setInstance(newChart);
+        }
+
+        const opIdInput = document.getElementById('operatorId');
+        const opNameInput = document.getElementById('operatorName');
+        const searchStatus = document.getElementById('operatorSearchStatus');
+        const spinner = document.getElementById('searchSpinner');
+
+        opIdInput.addEventListener('input', function(e) {
+            let idValue = e.target.value.trim();
+            idValue = idValue.replace(/[^0-9]/g, '');
+            e.target.value = idValue;
+
+            if (idValue.length === 2) {
+                performOperatorLookup(idValue);
+            } else {
+                opNameInput.value = '';
+                opNameInput.setAttribute('readonly', 'true');
+                opNameInput.className = "w-full p-2.5 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none transition font-medium";
+                searchStatus.innerHTML = "";
+            }
+        });
+
+        function performOperatorLookup(idValue) {
+            spinner.classList.remove('hidden');
+            searchStatus.innerText = "กำลังตรวจหารายชื่อ...";
+            searchStatus.className = "text-xs mt-1 block h-4 font-medium text-blue-500 animate-pulse";
+            opNameInput.className = "w-full p-2.5 border border-yellow-300 bg-yellow-50 text-yellow-600 rounded-lg outline-none transition font-medium";
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(onOperatorFound)
+                    .withFailureHandler(onOperatorFailure)
+                    .findOperatorName(idValue);
+            } else {
+                setTimeout(() => {
+                    const mockPersonelDb = {
+                        "45": "ทนพ.สมชาย ใจดี (Mock)",
+                        "90": "ทนพญ.สมศรี รักษาสุข (Mock)",
+                        "21": "ทนพ.รักชาติ ยิ่งชีพ (Mock)"
+                    };
+
+                    if (mockPersonelDb[idValue]) {
+                        onOperatorFound({ status: "success", name: mockPersonelDb[idValue] });
+                    } else {
+                        onOperatorFound({ status: "not_found", message: "ไม่พบข้อมูลผู้ปฏิบัติงานรหัสนี้ในระบบ (กรุณากรอกชื่อเอง)" });
+                    }
+                }, 800);
+            }
+        }
+
+        function onOperatorFound(response) {
+            spinner.classList.add('hidden');
+            if (response.status === 'success') {
+                opNameInput.value = response.name;
+                opNameInput.setAttribute('readonly', 'true');
+                opNameInput.className = "w-full p-2.5 border border-green-300 bg-green-50 text-green-700 rounded-lg outline-none transition font-medium";
+
+                searchStatus.innerHTML = `<i class="fa-solid fa-circle-check"></i> ตรวจพบรายชื่อสำเร็จ`;
+                searchStatus.className = "text-xs mt-1 block h-4 font-medium text-green-600";
+            } else {
+                opNameInput.value = '';
+                opNameInput.removeAttribute('readonly');
+                opNameInput.focus();
+                opNameInput.className = "w-full p-2.5 border border-red-300 bg-white text-gray-800 rounded-lg outline-none transition font-medium";
+
+                searchStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${response.message}`;
+                searchStatus.className = "text-xs mt-1 block h-4 font-medium text-red-500";
+            }
+        }
+
+        function onOperatorFailure(error) {
+            spinner.classList.add('hidden');
+            opNameInput.value = '';
+            opNameInput.removeAttribute('readonly');
+            opNameInput.className = "w-full p-2.5 border border-red-300 bg-white text-gray-800 rounded-lg outline-none transition font-medium";
+
+            searchStatus.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ผิดพลาด: ${error}`;
+            searchStatus.className = "text-xs mt-1 block h-4 font-medium text-red-500";
+        }
+
+        function fetchTestListMaster() {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if (response.status === 'success') {
+                            testListMap = response.data;
+                            updateAllTestDropdowns();
+                        } else {
+                            console.error("TestList Fetch Error:", response.message);
+                        }
+                    })
+                    .getTestListMap();
+            } else {
+                testListMap = {
+                    "Chemistry": ["Glucose (น้ำตาล)", "Cholesterol (ไขมัน)", "BUN (ไต)", "Creatinine (ไต)"],
+                    "Hematology": ["CBC (ความสมบูรณ์เม็ดเลือด)", "Hb (ฮีโมโกลบิน)", "Hct (ความเข้มข้นเลือด)", "WBC Diff"],
+                    "Immunology": ["HBsAg (ตับอักเสบบี)", "Anti-HIV (ภูมิคุ้มกันเอชไอวี)", "Syphilis (ซิฟิลิส)"],
+                    "Microscopy": ["UA (ตรวจปัสสาวะ)", "Stool Exam (ตรวจอุจจาระ)", "UPT (ทดสอบตั้งครรภ์)"],
+                    "Blood bank": ["ABO Grouping (หมู่เลือด)", "Rh Typing", "Crossmatching"],
+                    "Microbiology": ["Hemoculture", "Urine Culture", "Gram Stain"]
+                };
+                updateAllTestDropdowns();
+            }
+        }
+
+        const sectionSelect = document.getElementById('section');
+        sectionSelect.addEventListener('change', function() {
+            updateAllTestDropdowns();
+        });
+
+        function updateAllTestDropdowns() {
+            const currentSection = sectionSelect.value;
+            const dropdowns = document.getElementsByName('testItem[]');
+
+            Array.from(dropdowns).forEach(dropdown => {
+                const currentVal = dropdown.value;
+                populateDropdownOptions(dropdown, currentSection, currentVal);
+            });
+        }
+
+        function populateDropdownOptions(dropdown, section, preSelectedValue = "") {
+            dropdown.innerHTML = "";
+
+            if (!section) {
+                const option = document.createElement('option');
+                option.value = "";
+                option.disabled = true;
+                option.selected = true;
+                option.textContent = "กรุณาเลือกสาขาก่อน...";
+                dropdown.appendChild(option);
+                return;
+            }
+
+            const tests = testListMap[section] || [];
+
+            if (tests.length === 0) {
+                const option = document.createElement('option');
+                option.value = "";
+                option.disabled = true;
+                option.selected = true;
+                option.textContent = "ไม่พบรายการตรวจสำหรับสาขานี้";
+                dropdown.appendChild(option);
+                return;
+            }
+
+            const placeholder = document.createElement('option');
+            placeholder.value = "";
+            placeholder.disabled = true;
+            if (!preSelectedValue || !tests.includes(preSelectedValue)) {
+                placeholder.selected = true;
+            }
+            placeholder.textContent = "เลือกรายการตรวจ...";
+            dropdown.appendChild(placeholder);
+
+            tests.forEach(test => {
+                const option = document.createElement('option');
+                option.value = test;
+                option.textContent = test;
+                if (test === preSelectedValue) {
+                    option.selected = true;
+                }
+                dropdown.appendChild(option);
+            });
+        }
+
+        let eqaChildCount = 0;
+
+        // Fallback รายชื่อ Test ต่อ EQA Program สำหรับโหมด Preview (คีย์ต้องตรงกับ value ของ <select id="eqaProgram">)
+        const mockEqaTestPrograms = {
+            "Chemistry": ["Glucose", "Cholesterol", "Triglyceride", "BUN", "Creatinine", "Uric Acid", "AST", "ALT"],
+            "Hematology_CBC": ["WBC", "RBC", "Hb", "Hct", "MCV", "Platelet"],
+            "Hematology_Coag": ["PT", "APTT", "INR"],
+            "Immunology": ["HBsAg", "Anti-HCV", "Anti-HIV", "Syphilis (VDRL)"],
+            "Microscopy": ["UA", "Stool Exam", "UPT"],
+            "Microbiology": ["Hemoculture", "Urine Culture", "Gram Stain"],
+            "Blood bank": ["ABO Grouping", "Rh Typing", "Crossmatching"]
+        };
+
+        document.getElementById('eqaReviewDate').valueAsDate = new Date();
+        document.getElementById('eqaTestDate').valueAsDate = new Date();
+        document.getElementById('eqaHeadAckDate').valueAsDate = new Date();
+
+        // ดึงรายชื่อ Test ต่อ EQA Program จากฐานข้อมูลจริง (ชีต EQA_TestList) เมื่อรันบน Apps Script
+        function fetchEqaTestListMaster() {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if (response.status === 'success') {
+                            eqaTestProgramMap = response.data || {};
+                        } else {
+                            console.error("EQA TestList Fetch Error:", response.message);
+                            eqaTestProgramMap = {};
+                        }
+                        // รีเฟรชตัวเลือก Test_Nopass ใหม่ทันทีหลังข้อมูลมาถึง เผื่อผู้ใช้เลือก EQA Program ไปแล้วก่อนที่ข้อมูลจะโหลดเสร็จ
+                        if (document.getElementById('eqaProgram').value) {
+                            updateEqaTestOptions();
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        console.error("EQA TestList Fetch Failure:", err);
+                        eqaTestProgramMap = {};
+                        if (document.getElementById('eqaProgram').value) {
+                            updateEqaTestOptions();
+                        }
+                    })
+                    .getEqaTestListMap();
+            } else {
+                eqaTestProgramMap = {};
+            }
+        }
+
+        // คืนรายชื่อ Test ของ EQA Program ที่ระบุ โดยเช็คข้อมูลจริงจากชีตก่อนเสมอ
+        // แล้วจึง fallback ไปที่รายการจำลอง (mock) เฉพาะโปรแกรมนั้นๆ ถ้าไม่พบข้อมูลจริง
+        // (ไม่ fallback ทั้งก้อน เพื่อไม่ให้โปรแกรมที่มีข้อมูลจริงอยู่แล้วถูกแทนที่ด้วย mock ทั้งหมด)
+        function getEqaTestsForProgram(program) {
+            if (eqaTestProgramMap && Array.isArray(eqaTestProgramMap[program]) && eqaTestProgramMap[program].length > 0) {
+                return eqaTestProgramMap[program];
+            }
+            return mockEqaTestPrograms[program] || [];
+        }
+
+        function handleEqaUserLookup(inputEl, nameElId, statusElId, spinnerId) {
+            let idValue = inputEl.value.trim().replace(/[^0-9]/g, '');
+            inputEl.value = idValue;
+
+            const nameInput = document.getElementById(nameElId);
+            const searchStatus = document.getElementById(statusElId);
+            const spinner = document.getElementById(spinnerId);
+
+            if (idValue.length === 2) {
+                spinner.classList.remove('hidden');
+                searchStatus.innerText = "กำลังตรวจหารายชื่อ...";
+                searchStatus.className = "text-xs mt-1 block h-4 font-medium text-blue-500 animate-pulse";
+                nameInput.className = "w-full p-2.5 border border-yellow-300 bg-yellow-50 text-yellow-600 rounded-lg outline-none transition font-medium";
+
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run
+                        .withSuccessHandler(function(response) {
+                            spinner.classList.add('hidden');
+                            if (response.status === 'success') {
+                                nameInput.value = response.name;
+                                nameInput.setAttribute('readonly', 'true');
+                                nameInput.className = "w-full p-2.5 border border-green-300 bg-green-50 text-green-700 rounded-lg outline-none transition font-medium";
+                                searchStatus.innerHTML = `<i class="fa-solid fa-circle-check"></i> ตรวจพบสำเร็จ`;
+                                searchStatus.className = "text-xs mt-1 block h-4 font-medium text-green-600";
+                            } else {
+                                nameInput.value = '';
+                                nameInput.removeAttribute('readonly');
+                                nameInput.focus();
+                                nameInput.className = "w-full p-2.5 border border-red-300 bg-white text-gray-800 rounded-lg outline-none transition font-medium";
+                                searchStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${response.message}`;
+                                searchStatus.className = "text-xs mt-1 block h-4 font-medium text-red-500";
+                            }
+                        })
+                        .withFailureHandler(function(error) {
+                            spinner.classList.add('hidden');
+                            nameInput.value = '';
+                            nameInput.removeAttribute('readonly');
+                            nameInput.className = "w-full p-2.5 border border-red-300 bg-white text-gray-800 rounded-lg outline-none transition font-medium";
+                            searchStatus.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ผิดพลาด: ${error}`;
+                            searchStatus.className = "text-xs mt-1 block h-4 font-medium text-red-500";
+                        })
+                        .findOperatorName(idValue);
+                } else {
+                    // จำลองการค้นหาในโหมด Preview
+                    setTimeout(() => {
+                        spinner.classList.add('hidden');
+                        const mockPersonelDb = {
+                            "45": "ทนพ.สมชาย ใจดี",
+                            "90": "ทนพญ.สมศรี รักษาสุข",
+                            "21": "ทนพ.รักชาติ ยิ่งชีพ"
+                        };
+
+                        if (mockPersonelDb[idValue]) {
+                            nameInput.value = mockPersonelDb[idValue];
+                            nameInput.setAttribute('readonly', 'true');
+                            nameInput.className = "w-full p-2.5 border border-green-300 bg-green-50 text-green-700 rounded-lg outline-none transition font-medium";
+                            searchStatus.innerHTML = `<i class="fa-solid fa-circle-check"></i> ตรวจพบสำเร็จ`;
+                            searchStatus.className = "text-xs mt-1 block h-4 font-medium text-green-600";
+                        } else {
+                            nameInput.value = '';
+                            nameInput.removeAttribute('readonly');
+                            nameInput.focus();
+                            nameInput.className = "w-full p-2.5 border border-red-300 bg-white text-gray-800 rounded-lg outline-none transition font-medium";
+                            searchStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ไม่พบในระบบ ระบุเอง`;
+                            searchStatus.className = "text-xs mt-1 block h-4 font-medium text-red-500";
+                        }
+                    }, 800);
+                }
+            } else {
+                nameInput.value = '';
+                nameInput.setAttribute('readonly', 'true');
+                nameInput.className = "w-full p-2.5 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none transition font-medium";
+                searchStatus.innerHTML = "";
+            }
+        }
+
+        function validateEqaItems() {
+            const total = parseInt(document.getElementById('eqaTotalItems').value) || 0;
+            const passed = parseInt(document.getElementById('eqaPassedItems').value) || 0;
+            const alertEl = document.getElementById('eqaErrorAlert');
+            const allPassedAlertEl = document.getElementById('eqaAllPassedAlert');
+            const childSectionEl = document.getElementById('eqaChildSection');
+            const childContainerEl = document.getElementById('eqaChildItemsContainer');
+            const submitBtn = document.getElementById('submitEqaBtn');
+
+            if (total > 0 && passed > total) {
+                alertEl.classList.remove('hidden');
+                allPassedAlertEl.classList.add('hidden');
+                childSectionEl.classList.remove('hidden');
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            alertEl.classList.add('hidden');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            if (total > 0 && passed >= total) {
+                // ผ่านครบ 100% (หรือมากกว่า) ไม่ต้องกรอกฟอร์มย่อย Nopass
+                childSectionEl.classList.add('hidden');
+                allPassedAlertEl.classList.remove('hidden');
+                // ล้างการ์ดที่ค้างอยู่ทั้งหมด ป้องกันไม่ให้ input required
+                // ที่ถูกซ่อนไว้ไปบล็อกการ submit ฟอร์มแบบเงียบๆ
+                if (childContainerEl.children.length > 0) {
+                    childContainerEl.innerHTML = '';
+                    eqaChildCount = 0;
+                }
+            } else {
+                childSectionEl.classList.remove('hidden');
+                allPassedAlertEl.classList.add('hidden');
+                // ถ้าไม่มีการ์ดเลย (เพราะเพิ่งล้างไปตอน 100%) ให้เพิ่มกลับมา 1 การ์ด
+                if (childContainerEl.children.length === 0) {
+                    addEqaChildItem();
+                }
+            }
+        }
+
+        function updateEqaTestOptions() {
+            const program = document.getElementById('eqaProgram').value;
+            const radioContainers = document.querySelectorAll('.eqa-test-nopass-container');
+
+            const tests = getEqaTestsForProgram(program);
+
+            radioContainers.forEach((container) => {
+                const childId = container.getAttribute('data-child-id');
+                let html = '';
+
+                if (tests.length === 0) {
+                    html = `<span class="text-xs text-red-500 italic">กรุณาเลือก EQA Program ด้านบนก่อน</span>`;
+                } else {
+                    html = tests.map(test => `
+                        <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                            <input type="radio" name="eqaTestNopass_${childId}" value="${test}" required class="text-blue-600 focus:ring-blue-500">
+                            <span>${test}</span>
+                        </label>
+                    `).join('');
+                }
+                container.innerHTML = html;
+            });
+        }
+
+        function addEqaChildItem() {
+            eqaChildCount++;
+            const container = document.getElementById('eqaChildItemsContainer');
+            const program = document.getElementById('eqaProgram').value;
+            const tests = getEqaTestsForProgram(program);
+
+            let testRadioHtml = tests.length > 0
+                ? tests.map(test => `
+                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                        <input type="radio" name="eqaTestNopass_${eqaChildCount}" value="${test}" required class="text-blue-600 focus:ring-blue-500">
+                        <span>${test}</span>
+                    </label>
+                `).join('')
+                : `<span class="text-xs text-red-500 italic">กรุณาเลือก EQA Program ด้านบนก่อน</span>`;
+
+            const itemHtml = `
+                <div class="eqa-child-item bg-gray-50 p-5 rounded-xl border border-gray-200 relative fade-in" id="eqa-child-${eqaChildCount}">
+                    <div class="absolute top-4 right-4">
+                        ${eqaChildCount > 1 ?
+                        `<button type="button" onclick="removeEqaChildItem(${eqaChildCount})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 h-8 w-8 rounded-full flex items-center justify-center transition" title="ลบรายการนี้">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>` :
+                        `<span class="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded">รายการที่ไม่ผ่านที่ 1</span>`}
+                    </div>
+
+                    <h4 class="font-medium text-gray-700 mb-4 flex items-center gap-2">
+                        <span class="bg-red-200 text-red-700 rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold">${eqaChildCount}</span>
+                        ข้อมูลวิเคราะห์สาเหตุ (Test Nopass)
+                    </h4>
+
+                    <div class="grid grid-cols-1 gap-5">
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Test_Nopass (เลือก Test ที่ตก) *</label>
+                            <div class="flex flex-wrap gap-2 eqa-test-nopass-container" data-child-id="${eqaChildCount}">
+                                ${testRadioHtml}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">ทบทวน Trend ของผลที่ผ่านมา</label>
+                            <input type="text" name="eqaTrendHistory[]" value="ไม่มีปัญหา" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">ปัญหาจากงานเอกสาร</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ไม่ใช่', 'พิมพ์/เขียนคำผิด', 'ลอกคำใส่ผิด test', 'ไม่ได้ทดสอบ test นั้น', 'ไม่ได้รายงาน test นั้น', 'ทดสอบ/รายงานผลช้าเกินกำหนด due date'].map((opt, idx) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="checkbox" name="eqaDocProblem_${eqaChildCount}" value="${opt}" ${idx === 0 ? 'checked' : ''} class="text-blue-600 rounded focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">ปัญหาจากการเตรียมตัวอย่าง</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ไม่ใช่', 'สัดส่วน sample : DW ผิด', 'Beyond expired date', 'ละลายตัวอย่างไม่ดี', 'รอทดสอบนาน/เก็บตัวอย่างทดสอบไม่ดี'].map((opt, idx) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="checkbox" name="eqaPrepProblem_${eqaChildCount}" value="${opt}" ${idx === 0 ? 'checked' : ''} class="text-blue-600 rounded focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">การทบทวน IQC</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['within mean ± 2SD', 'outside mean ± 2SD', 'shift up', 'shift down', 'trend up', 'trend down'].map((opt, idx) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="checkbox" name="eqaIqcReview_${eqaChildCount}" value="${opt}" ${idx === 0 ? 'checked' : ''} class="text-blue-600 rounded focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">ผล EQA แสดงแนวโน้ม shift หรือ trend เช่นเดียวกับผล IQC</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ไม่ใช่', 'ใช่'].map((opt) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="eqaTrendMatch_${eqaChildCount}" value="${opt}" ${opt === 'ใช่' ? 'checked' : ''} class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">มีการเจือจางตัวอย่าง PT ก่อนทดสอบหรือไม่</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ใช่-ทำถูกต้อง', 'ใช่-ทำไม่ถูกต้อง', 'ไม่ใช่'].map((opt) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="eqaDilution_${eqaChildCount}" value="${opt}" ${opt === 'ใช่-ทำถูกต้อง' ? 'checked' : ''} class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">จำนวนตัวอย่างที่มีปัญหา</label>
+                            <div class="flex flex-col gap-2">
+                                <label class="inline-flex items-start gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 cursor-pointer transition">
+                                    <input type="radio" name="eqaProbAmount_${eqaChildCount}" value="1 ตัวอย่าง" required class="text-blue-600 focus:ring-blue-500 mt-0.5">
+                                    <span class="leading-relaxed"><b>1 ตัวอย่าง:</b> อาจเกิดจาก random error หรือ specimen problem ควรบันทึกการทบทวนปัญหาไว้</span>
+                                </label>
+                                <label class="inline-flex items-start gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 cursor-pointer transition">
+                                    <input type="radio" name="eqaProbAmount_${eqaChildCount}" value="2-3 ตัวอย่าง" class="text-blue-600 focus:ring-blue-500 mt-0.5">
+                                    <span class="leading-relaxed"><b>2-3 ตัวอย่าง:</b> อาจเกิดจากเครื่องมือ ตรวจสอบดูว่ามีการสับเปลี่ยนตัวอย่างหรือไม่ ทวนสอบ linearity ของเครื่องมือ บันทึกปฏิบัติการแก้ไข</span>
+                                </label>
+                                <label class="inline-flex items-start gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 cursor-pointer transition">
+                                    <input type="radio" name="eqaProbAmount_${eqaChildCount}" value="ทุกๆ ตัวอย่าง" class="text-blue-600 focus:ring-blue-500 mt-0.5">
+                                    <span class="leading-relaxed"><b>ทุกๆ ตัวอย่าง:</b> ส่วนใหญ่มักเกิดจากปัญหาเครื่องมือหรือน้ำยาตรวจ ตรวจสอบกำหนดเวลาบำรุงรักษาเครื่องมือตามข้อกำหนดของผู้ผลิตเครื่อง ตรวจสอบน้ำยาตรวจเกี่ยวกับ lot number และวันหมดอายุ ตรวจสอบกำหนดการสอบเทียบ บันทึกปฏิบัติการแก้ไข</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">ปัญหามีผลกระทบต่อรายงานผลผู้ป่วยหรือไม่</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['มี', 'ไม่มี'].map((opt) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="eqaImpact_${eqaChildCount}" value="${opt}" ${opt === 'ไม่มี' ? 'checked' : ''} class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">สรุปปัญหาเกิดจาก</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['Clerical', 'Problem with PT material', 'Technical problem', 'Methodologic problem', 'No experianation'].map((opt) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="eqaConclusion_${eqaChildCount}" value="${opt}" required class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Corrective action</label>
+                            <textarea name="eqaCorrection[]" rows="3" placeholder="ระบุการปฏิบัติการแก้ไข..." required class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white resize-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', itemHtml);
+        }
+
+        function removeEqaChildItem(id) {
+            Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: "คุณต้องการลบรายการทดสอบที่ไม่ผ่านเกณฑ์นี้ใช่หรือไม่",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#9ca3af',
+                confirmButtonText: 'ยืนยันการลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const el = document.getElementById(`eqa-child-${id}`);
+                    el.style.opacity = '0';
+                    el.style.transform = 'scale(0.95)';
+                    el.style.transition = 'all 0.2s ease-out';
+                    setTimeout(() => el.remove(), 200);
+                }
+            });
+        }
+
+        //-----------------------------------
+            
+        function saveEqaFormToSheet(eqaFormData) {
+            google.script.run
+                .withSuccessHandler(onEqaSuccess)
+                .withFailureHandler(onEqaFailure)
+                [eqaEditParentId ? 'updateEqaData' : 'saveEqaData'](eqaEditParentId ? Object.assign(eqaFormData, {parentId: eqaEditParentId}) : eqaFormData);
+        }
+
+        //ส่วนเพิ่มไฟล์
+
+        function readEqaFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                if (!file) {
+                    resolve(null);
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    reject(new Error('ไฟล์มีขนาดเกิน 5 MB'));
+                    return;
+                }
+                const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+                if (!allowedTypes.includes(file.type)) {
+                    reject(new Error('รองรับเฉพาะ PDF, JPG และ PNG'));
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = () => resolve({
+                    name: file.name,
+                    mimeType: file.type,
+                    base64: String(reader.result).split(',')[1]
+                });
+                reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์ได้'));
+                reader.readAsDataURL(file);
+              });
+        }
+        
+
+
+        function submitEqaForm(event) {
+            event.preventDefault();
+
+            const totalItems = parseInt(document.getElementById('eqaTotalItems').value) || 0;
+            const passedItems = parseInt(document.getElementById('eqaPassedItems').value) || 0;
+            if (passedItems > totalItems) {
+                Swal.fire('ข้อผิดพลาด', 'จำนวน Item ที่ผ่านเกณฑ์ ต้องน้อยกว่าหรือเท่ากับจำนวน Item ทั้งหมด', 'error');
+                return;
+            }
+
+            const allPassed = (totalItems > 0 && passedItems >= totalItems);
+
+            const childCards = document.querySelectorAll('.eqa-child-item');
+            if (!allPassed && childCards.length === 0) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเพิ่มรายการทดสอบที่ไม่ผ่านเกณฑ์อย่างน้อย 1 รายการ', 'warning');
+                return;
+            }
+
+            const eqaFormData = {
+                type: "EQA",
+                parent: {
+                    reviewDate: document.getElementById('eqaReviewDate').value,
+                    reviewerId: document.getElementById('eqaReviewerId').value,
+                    reviewerName: document.getElementById('eqaReviewerName').value,
+                    program: document.getElementById('eqaProgram').value,
+                    trialNumber: document.getElementById('eqaTrialNumber').value,
+                    testDate: document.getElementById('eqaTestDate').value,
+                    totalItems: totalItems,
+                    passedItems: passedItems,
+                    headId: document.getElementById('eqaHeadId').value,
+                    headName: document.getElementById('eqaHeadName').value,
+                    headAckDate: document.getElementById('eqaHeadAckDate').value
+                },
+                children: []
+            };
+
+            let isChildValid = true;
+            if (!allPassed) {
+                childCards.forEach(card => {
+                    const testRadio = card.querySelector('input[type="radio"][name^="eqaTestNopass_"]:checked');
+                    const trendInput = card.querySelector('input[name="eqaTrendHistory[]"]');
+                    const correctionInput = card.querySelector('textarea[name="eqaCorrection[]"]');
+
+                    const docProblem = Array.from(card.querySelectorAll('input[type="checkbox"][name^="eqaDocProblem_"]:checked')).map(cb => cb.value).join(', ');
+                    const prepProblem = Array.from(card.querySelectorAll('input[type="checkbox"][name^="eqaPrepProblem_"]:checked')).map(cb => cb.value).join(', ');
+                    const iqcReview = Array.from(card.querySelectorAll('input[type="checkbox"][name^="eqaIqcReview_"]:checked')).map(cb => cb.value).join(', ');
+
+                    const trendMatch = card.querySelector('input[type="radio"][name^="eqaTrendMatch_"]:checked');
+                    const dilution = card.querySelector('input[type="radio"][name^="eqaDilution_"]:checked');
+                    const probAmount = card.querySelector('input[type="radio"][name^="eqaProbAmount_"]:checked');
+                    const impact = card.querySelector('input[type="radio"][name^="eqaImpact_"]:checked');
+                    const conclusion = card.querySelector('input[type="radio"][name^="eqaConclusion_"]:checked');
+
+                    if (!testRadio || !probAmount || !conclusion) {
+                        isChildValid = false;
+                    }
+
+                    eqaFormData.children.push({
+                        testNopass: testRadio ? testRadio.value : '',
+                        trendHistory: trendInput ? trendInput.value : '',
+                        docProblem: docProblem,
+                        prepProblem: prepProblem,
+                        iqcReview: iqcReview,
+                        trendMatch: trendMatch ? trendMatch.value : '',
+                        dilution: dilution ? dilution.value : '',
+                        probAmount: probAmount ? probAmount.value : '',
+                        impact: impact ? impact.value : '',
+                        conclusion: conclusion ? conclusion.value : '',
+                        correction: correctionInput ? correctionInput.value : ''
+                    });
+                });
+            }
+
+            if (!isChildValid) {
+                Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุข้อมูลรายการที่ไม่ผ่านให้ครบถ้วน โดยเฉพาะ Test, จำนวนตัวอย่าง และ สรุปปัญหา', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'กำลังบันทึกข้อมูล...',
+                html: 'กรุณารอระบบจัดเก็บข้อมูลการทบทวน EQA',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading()
+                }
+            });
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                const selectedFile = document.getElementById('eqaFile').files[0];
+
+                readEqaFileAsBase64(selectedFile)
+                    .then(fileObj => {
+                        if (!fileObj) {
+                            saveEqaFormToSheet(eqaFormData);
+                            return;
+                        }
+
+                        google.script.run
+                            .withSuccessHandler(uploadResponse => {
+                                if (!uploadResponse || uploadResponse.status !== 'success') {
+                                    onEqaFailure(uploadResponse ? uploadResponse.message : 'อัปโหลดไฟล์ไม่สำเร็จ');
+                                    return;
+                                }
+                                eqaFormData.attachment = {
+                                    fileId: uploadResponse.fileId,
+                                    fileName: uploadResponse.fileName,
+                                    fileUrl: uploadResponse.fileUrl
+                                };
+                                saveEqaFormToSheet(eqaFormData);
+                            })
+                            .withFailureHandler(onEqaFailure)
+                            .uploadEqaFile(fileObj);
+                    })
+                    .catch(error => onEqaFailure(error.message || error));
+            } else {
+                console.log('Mocking EQA Submission Object: ', eqaFormData);
+                setTimeout(() => {
+                    onEqaSuccess({status: 'success', message: 'บันทึกเรียบร้อยแล้วใน Preview', parentId: 'EQA-MOCK-SUCCESS'});
+                }, 1000);
+            }
+
+        }
+
+
+
+
+
+
+        function onEqaSuccess(response) {
+            if(response.status === 'success') {
+                const wasEdit = !!eqaEditParentId;
+                Swal.fire({
+                    icon: 'success',
+                    title: wasEdit ? 'แก้ไขข้อมูล EQA สำเร็จ!' : 'บันทึกข้อมูล EQA สำเร็จ!',
+                    html: `<div class="text-base">รหัสอ้างอิง: <b>${esc(response.parentId)}</b></div><div class="mt-3 text-sm text-gray-500">สามารถสร้างรายงาน PDF ของรายการนี้ได้ทันที</div>`,
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: '📄 สร้าง PDF',
+                    denyButtonText: '✏️ แก้ไขต่อ',
+                    cancelButtonText: 'ปิด',
+                    confirmButtonColor: '#2563eb',
+                    denyButtonColor: '#f59e0b'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        generateEqaPdfFromClient(response.parentId, wasEdit);
+                        return;
+                    }
+                    if (result.isDenied) {
+                        loadEqaForEdit(response.parentId);
+                        return;
+                    }
+                    resetEqaAfterPdf(false, response.parentId);
+                });
+            } else {
+                onEqaFailure(response.message);
+            }
+        }
+
+        function generateEqaPdfFromClient(parentId, returnToForm) {
+            Swal.fire({
+                title: 'กำลังสร้าง PDF...',
+                html: 'ระบบกำลังจัดรูปแบบรายงาน EQA กรุณารอสักครู่',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'สร้าง PDF สำเร็จ',
+                            html: `<div class="text-sm">${esc(res.fileName || 'รายงาน EQA.pdf')}</div>`,
+                            showCancelButton: true,
+                            confirmButtonText: '📄 เปิด PDF',
+                            cancelButtonText: 'ปิด',
+                            confirmButtonColor: '#2563eb'
+                        }).then(function(r) {
+                            if (r.isConfirmed && res.fileUrl) window.open(res.fileUrl, '_blank');
+                            resetEqaAfterPdf(returnToForm, parentId);
+                        });
+                    } else {
+                        Swal.fire('สร้าง PDF ไม่สำเร็จ', res ? res.message : 'ไม่ทราบสาเหตุ', 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    Swal.fire('สร้าง PDF ไม่สำเร็จ', String(err), 'error');
+                })
+                .generateEqaPdf(parentId);
+        }
+
+        function resetEqaAfterPdf(returnToForm, parentId) {
+            if (returnToForm) {
+                loadEqaForEdit(parentId);
+                return;
+            }
+            eqaEditParentId = null; eqaEditAttachment = null; setEqaEditMode(false);
+            document.getElementById('eqaForm').reset();
+            document.getElementById('eqaReviewDate').valueAsDate = new Date();
+            document.getElementById('eqaTestDate').valueAsDate = new Date();
+            document.getElementById('eqaHeadAckDate').valueAsDate = new Date();
+            document.getElementById('eqaChildItemsContainer').innerHTML = '';
+            eqaChildCount = 0;
+            document.getElementById('eqaChildSection').classList.remove('hidden');
+            document.getElementById('eqaAllPassedAlert').classList.add('hidden');
+            document.getElementById('eqaErrorAlert').classList.add('hidden');
+            ['eqaReviewerName', 'eqaHeadName'].forEach(id => {
+                const el = document.getElementById(id);
+                el.setAttribute('readonly', 'true');
+                el.className = "w-full p-2.5 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none transition font-medium";
+            });
+            document.getElementById('eqaReviewerStatus').innerHTML = "";
+            document.getElementById('eqaHeadStatus').innerHTML = "";
+            addEqaChildItem();
+        }
+
+        function onEqaFailure(error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'พบข้อผิดพลาด',
+                text: 'การดำเนินรายการล้มเหลว: ' + error,
+                confirmButtonColor: '#ef4444'
+            });
+        }
+
+        function addChildItem() {
+            childCount++;
+            const container = document.getElementById('childItemsContainer');
+
+            const itemHtml = `
+                <div class="child-item bg-gray-50 p-5 rounded-xl border border-gray-200 relative fade-in" id="child-${childCount}">
+                    <div class="absolute top-4 right-4">
+                        ${childCount > 1 ?
+                        `<button type="button" onclick="removeChildItem(${childCount})" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 h-8 w-8 rounded-full flex items-center justify-center transition" title="ลบรายการนี้">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>` :
+                        `<span class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">รายการที่ 1 (ตั้งต้น)</span>`}
+                    </div>
+
+                    <h4 class="font-medium text-gray-700 mb-4 flex items-center gap-2">
+                        <span class="bg-gray-200 text-gray-600 rounded-full h-6 w-6 flex items-center justify-center text-xs">${childCount}</span>
+                        รายละเอียดการตรวจสอบ
+                    </h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div class="lg:col-span-1">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">รายการตรวจ *</label>
+                            <select name="testItem[]" required class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-gray-700">
+                                <option value="" disabled selected>กรุณาเลือกสาขาก่อน...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Number Of Control</label>
+                            <input type="number" name="numControl[]" placeholder="ระบุจำนวน Control..." class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Westgard Rule</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['1_3S', '2_2S', 'R_4S', '4_1S', '10X', '1-2s'].map(rule => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="westgard_${childCount}" value="${rule}" class="text-blue-600 focus:ring-blue-500">
+                                        <span>${rule}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Error Type</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['Random error', 'Systemic error'].map(err => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="errorType_${childCount}" value="${err}" class="text-blue-600 focus:ring-blue-500">
+                                        <span>${err}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">สภาพน้ำยา</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ปกติ', 'เหลือน้อย', 'Lot เดิม แต่เปิดใหม่', 'Lot ใหม่', 'ใส่ผิดช่อง'].map((opt, idx) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="reagentStatus_${childCount}" value="${opt}" ${idx === 0 ? 'checked' : ''} class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">สภาพ Control</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ปกติ', 'เหลือน้อย', 'Lot เดิม แต่เปิดใหม่', 'Lot ใหม่', 'ใส่ผิดช่อง'].map((opt, idx) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="controlStatus_${childCount}" value="${opt}" ${idx === 0 ? 'checked' : ''} class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">สภาพ Standard</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ปกติ', 'เหลือน้อย', 'Lot เดิม แต่เปิดใหม่', 'Lot ใหม่', 'ใส่ผิดช่อง'].map((opt, idx) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="standardStatus_${childCount}" value="${opt}" ${idx === 0 ? 'checked' : ''} class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">ด้านเครื่องมือ</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['ปกติ', 'Probe สกปรก', 'Probe ชำรุด'].map((opt, idx) => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="radio" name="instrumentStatus_${childCount}" value="${opt}" ${idx === 0 ? 'checked' : ''} class="text-blue-600 focus:ring-blue-500">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3 mt-2 border-t border-gray-200 pt-3">
+                            <h5 class="text-xs font-bold text-gray-800 mb-3 flex items-center gap-1.5">
+                                <i class="fa-solid fa-clipboard-check text-blue-600"></i> สรุปและปฏิบัติการแก้ไข
+                            </h5>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">สรุปสาเหตุ (เลือกได้หลายข้อ)</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['น้ำยาเสื่อม', 'น้ำยาใหม่', 'ใส่น้ำยาผิดช่อง', 'Control ปริมาณน้อย', 'Control lot ใหม่', 'ใส่ Control ผิดช่อง', 'Probe สกปรก'].map(cause => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="checkbox" name="rootCause_${childCount}" value="${cause}" class="text-blue-600 rounded focus:ring-blue-500">
+                                        <span>${cause}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">ปฏิบัติการแก้ไข (เลือกได้หลายข้อ)</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['เปลี่ยน น้ำยา', 'เปลี่ยน Control', 'เปลี่ยน Standard', 'ล้าง Probe', 'Run Calibrate', 'Run Control'].map(corr => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="checkbox" name="correction_${childCount}" value="${corr}" class="text-blue-600 rounded focus:ring-blue-500">
+                                        <span>${corr}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1.5">ผลการแก้ไข (เลือกได้หลายข้อ)</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${['แก้ไขได้', 'แก้ไม่ได้', 'เก็บไว้ตรวจ', 'ส่งตรวจต่อ', 'ยกเลิกการตรวจ'].map(res => `
+                                    <label class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                        <input type="checkbox" name="result_${childCount}" value="${res}" class="text-blue-600 rounded focus:ring-blue-500">
+                                        <span>${res}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', itemHtml);
+
+            const newChild = document.getElementById(`child-${childCount}`);
+            const selectElement = newChild.querySelector('select[name="testItem[]"]');
+            populateDropdownOptions(selectElement, sectionSelect.value);
+        }
+
+        function removeChildItem(id) {
+            Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: "คุณต้องการลบรายการแถวตรวจเช็คนี้ใช่หรือไม่",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#9ca3af',
+                confirmButtonText: 'ยืนยันการลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const el = document.getElementById(`child-${id}`);
+                    el.style.opacity = '0';
+                    el.style.transform = 'scale(0.95)';
+                    el.style.transition = 'all 0.2s ease-out';
+                    setTimeout(() => el.remove(), 200);
+                }
+            });
+        }
+
+        function submitForm(event) {
+            event.preventDefault();
+
+            const childCards = document.querySelectorAll('.child-item');
+
+            if(childCards.length === 0) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเพิ่มรายการตรวจสอบด้านในอย่างน้อย 1 รายการ', 'error');
+                return;
+            }
+
+            for(let i = 0; i < childCards.length; i++) {
+                const sel = childCards[i].querySelector('select[name="testItem[]"]');
+                if(!sel || !sel.value) {
+                    Swal.fire('ข้อมูลไม่ครบถ้วน', 'โปรดระบุรายการตรวจของแถวย่อยให้ครบถ้วนก่อนบันทึก', 'warning');
+                    return;
+                }
+            }
+
+            Swal.fire({
+                title: 'กำลังบันทึกข้อมูล...',
+                html: 'กรุณารอระบบทำการประสานงานและจัดเก็บข้อมูล',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading()
+                }
+            });
+
+            const formData = {
+                parent: {
+                    operatorId: document.getElementById('operatorId').value,
+                    operatorName: document.getElementById('operatorName').value,
+                    recordDate: document.getElementById('recordDate').value,
+                    shift: document.getElementById('shift').value,
+                    section: document.getElementById('section').value,
+                    machine: document.getElementById('machine').value
+                },
+                children: []
+            };
+
+            childCards.forEach(card => {
+                const testSelect = card.querySelector('select[name="testItem[]"]');
+                const numCtrlInput = card.querySelector('input[name="numControl[]"]');
+
+                const westgardChecked = card.querySelector('input[type="radio"][name^="westgard_"]:checked');
+                const errorTypeChecked = card.querySelector('input[type="radio"][name^="errorType_"]:checked');
+                const reagentStatusChecked = card.querySelector('input[type="radio"][name^="reagentStatus_"]:checked');
+                const controlStatusChecked = card.querySelector('input[type="radio"][name^="controlStatus_"]:checked');
+                const standardStatusChecked = card.querySelector('input[type="radio"][name^="standardStatus_"]:checked');
+                const instrumentStatusChecked = card.querySelector('input[type="radio"][name^="instrumentStatus_"]:checked');
+
+                const rootCauseVals = Array.from(card.querySelectorAll('input[type="checkbox"][name^="rootCause_"]:checked')).map(cb => cb.value).join(', ');
+                const correctionVals = Array.from(card.querySelectorAll('input[type="checkbox"][name^="correction_"]:checked')).map(cb => cb.value).join(', ');
+                const resultVals = Array.from(card.querySelectorAll('input[type="checkbox"][name^="result_"]:checked')).map(cb => cb.value).join(', ');
+
+                formData.children.push({
+                    testItem: testSelect ? testSelect.value : '',
+                    westgard: westgardChecked ? westgardChecked.value : '',
+                    numControl: numCtrlInput ? numCtrlInput.value : '',
+                    errorType: errorTypeChecked ? errorTypeChecked.value : '',
+                    reagentStatus: reagentStatusChecked ? reagentStatusChecked.value : '',
+                    controlStatus: controlStatusChecked ? controlStatusChecked.value : '',
+                    standardStatus: standardStatusChecked ? standardStatusChecked.value : '',
+                    instrumentStatus: instrumentStatusChecked ? instrumentStatusChecked.value : '',
+                    rootCause: rootCauseVals,
+                    correction: correctionVals,
+                    result: resultVals
+                });
+            });
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(onSuccess)
+                    .withFailureHandler(onFailure)
+                    [iqcEditParentId ? 'updateIqcData' : 'saveData'](iqcEditParentId ? Object.assign(formData, {parentId: iqcEditParentId}) : formData);
+            } else {
+                console.log("Mocking Submission Object: ", formData);
+                setTimeout(() => {
+                    onSuccess({status: "success", message: "บันทึกเรียบร้อยแล้วใน Preview", parentId: "IQC-MOCK-SUCCESS"});
+                }, 1500);
+            }
+        }
+
+        function onSuccess(response) {
+            if(response.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: iqcEditParentId ? 'แก้ไขข้อมูล IQC สำเร็จ!' : 'บันทึกข้อมูลสำเร็จ!',
+                    text: `ระบบออกรหัสอ้างอิง: ${response.parentId}`,
+                    confirmButtonColor: '#2563eb'
+                }).then(() => {
+                    iqcEditParentId = null; setIqcEditMode(false);
+                     document.getElementById('iqcForm').reset();
+                    document.getElementById('recordDate').valueAsDate = new Date();
+
+                    opNameInput.value = '';
+                    opNameInput.setAttribute('readonly', 'true');
+                    opNameInput.className = "w-full p-2.5 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none transition font-medium";
+                    searchStatus.innerHTML = "";
+
+                    document.getElementById('childItemsContainer').innerHTML = '';
+                    childCount = 0;
+                    addChildItem();
+
+                    if (rawDashboardData.length > 0) {
+                        loadDashboardData();
+                    }
+                });
+            } else {
+                onFailure(response.message);
+            }
+        }
+
+        function onFailure(error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'พบข้อผิดพลาด',
+                text: 'การดำเนินรายการล้มเหลว: ' + error,
+                confirmButtonColor: '#ef4444'
+            });
+        }
+
+        // Dashboard สถานะ IQC: เรียก getIQCStatus() จาก Code.gs และอัปเดตทุก 60 วินาที
+        function loadIqcStatusDashboard() {
+            const cards = document.getElementById('iqcStatusCards');
+            const icon = document.getElementById('iqcStatusRefreshIcon');
+            if (!cards) return;
+            if (icon) icon.classList.add('animate-spin');
+            cards.innerHTML = '<div class="col-span-full bg-white rounded-xl p-6 text-center text-gray-500"><i class="fa-solid fa-spinner animate-spin mr-2"></i>กำลังโหลดสถานะ...</div>';
+            if (!(typeof google !== 'undefined' && google.script && google.script.run)) {
+                cards.innerHTML = '<div class="col-span-full bg-red-50 text-red-700 rounded-xl p-5">Dashboard นี้ต้องเปิดผ่าน Google Apps Script Web App และต้องมีฟังก์ชัน getIQCStatus() ใน Code.gs</div>';
+                if (icon) icon.classList.remove('animate-spin');
+                return;
+            }
+            var settled = false;
+            var timeoutId = setTimeout(function() {
+                if (settled) return;
+                settled = true;
+                if (icon) icon.classList.remove('animate-spin');
+                cards.innerHTML = '<div class="col-span-full bg-amber-50 text-amber-800 rounded-xl p-5">เซิร์ฟเวอร์ไม่ตอบกลับภายใน 30 วินาที: ตรวจว่ามีฟังก์ชัน getIQCStatus() ใน Code.gs และได้บันทึก/เผยแพร่ Web App เวอร์ชันล่าสุดแล้ว</div>';
+            }, 30000);
+            google.script.run.withSuccessHandler(function(items) {
+                if (settled) return;
+                settled = true; clearTimeout(timeoutId);
+                if (icon) icon.classList.remove('animate-spin');
+                items = Array.isArray(items) ? items : [];
+                const done = items.filter(x => x.done === true).length;
+                document.getElementById('iqcStatusDoneCount').textContent = done + ' / ' + items.length;
+                document.getElementById('iqcStatusPendingCount').textContent = (items.length - done) + ' / ' + items.length;
+                cards.innerHTML = items.map(function(item) {
+                    const ok = item.done === true;
+                    const title = item.missing ? (item.message || 'ไม่พบแท็บ') : 'คลิกเพื่อเปิดแท็บและกรอกข้อมูล';
+
+                    const cardColor = ok
+                        ? 'bg-green-100 border-green-300 border-l-green-500'
+                        : 'bg-red-100 border-red-300 border-l-red-500';
+                    const nameColor = ok ? 'text-green-900' : 'text-red-900';
+
+                    return '<a href="' + esc(item.url || '#') + '" target="_blank" rel="noopener noreferrer" title="' + esc(title) + '" class="block rounded-xl p-5 shadow-sm border border-l-4 ' + cardColor + ' hover:shadow-md transition">' +
+                        '<div class="font-semibold ' + nameColor + ' mb-3">' + esc(item.name || '') + '</div>' +
+                        '<div class="text-sm font-bold ' + (ok ? 'text-green-700' : 'text-red-700') + '"><i class="fa-solid ' + (ok ? 'fa-circle-check' : 'fa-circle-xmark') + ' mr-2"></i>' + (ok ? 'ทำแล้ว' : 'ยังไม่ทำ') + '</div></a>';
+                }).join('');
+                document.getElementById('iqcStatusUpdatedAt').textContent = 'อัปเดตล่าสุด: ' + new Date().toLocaleString('th-TH');
+            }).withFailureHandler(function(error) {
+                if (settled) return;
+                settled = true; clearTimeout(timeoutId);
+                if (icon) icon.classList.remove('animate-spin');
+                cards.innerHTML = '<div class="col-span-full bg-red-50 text-red-700 rounded-xl p-5">โหลดสถานะไม่สำเร็จ: ' + esc(error && error.message ? error.message : error) + '</div>';
+            }).getIQCStatus();
+        }
+        // รีเฟรชสถานะเป็นระยะขณะเปิดหน้าเว็บ (ไม่กระทบ Dashboard เดิม)
+        setInterval(function() {
+            const tab = document.getElementById('iqcStatusTab');
+            if (tab && !tab.classList.contains('hidden')) loadIqcStatusDashboard();
+        }, 60000);
+
+        window.onload = () => {
+            fetchTestListMaster();
+            fetchEqaTestListMaster();
+            addChildItem();
+            addEqaChildItem();
+        };
+
+        let eqaPassRateChartInstance = null;
+
+        // ===================== ค้นหา / แก้ไข =====================
+        function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];});}
+        function setCheckedValues(card,selector,values){const arr=String(values||'').split(',').map(x=>x.trim()).filter(Boolean);card.querySelectorAll(selector).forEach(el=>el.checked=arr.includes(el.value));}
+        function setRadio(card,prefix,value){if(!value)return;const el=Array.from(card.querySelectorAll('input[type="radio"][name^="'+prefix+'_"]')).find(x=>x.value===value);if(el)el.checked=true;}
+        function setSelectValue(select,value){value=value==null?'':String(value);if(value&&!Array.from(select.options).some(o=>o.value===value)){const o=document.createElement('option');o.value=value;o.textContent=value;select.appendChild(o);}select.value=value;}
+        function setIqcEditMode(edit){const b=document.getElementById('submitBtn');if(b)b.innerHTML=edit?'<i class="fa-solid fa-pen-to-square"></i> บันทึกการแก้ไข IQC':'<i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูลเข้าระบบ';}
+        function setEqaEditMode(edit){const b=document.getElementById('submitEqaBtn');if(b)b.innerHTML=edit?'<i class="fa-solid fa-pen-to-square"></i> บันทึกการแก้ไข EQA':'<i class="fa-solid fa-cloud-arrow-up"></i> บันทึกข้อมูล EQA เข้าระบบ';}
+        function searchIqcForEdit(){const box=document.getElementById('iqcEditResults');box.classList.remove('hidden');box.innerHTML='<div class="text-sm text-gray-500 py-3">กำลังค้นหา...</div>';const f={startDate:document.getElementById('iqcEditStartDate').value,endDate:document.getElementById('iqcEditEndDate').value,section:document.getElementById('iqcEditSection').value,machine:document.getElementById('iqcEditMachine').value,keyword:document.getElementById('iqcEditKeyword').value};google.script.run.withSuccessHandler(function(r){if(r.status!=='success'){box.innerHTML='<div class="text-red-500">'+esc(r.message)+'</div>';return;}if(!r.data.length){box.innerHTML='<div class="text-gray-500 py-3">ไม่พบข้อมูล</div>';return;}box.innerHTML='<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-blue-50"><tr><th class="p-2">วันที่</th><th class="p-2">สาขา</th><th class="p-2">เครื่อง</th><th class="p-2">ผู้ปฏิบัติ</th><th class="p-2">รายการ</th><th class="p-2">จัดการ</th></tr></thead><tbody>'+r.data.map(x=>'<tr class="border-b"><td class="p-2">'+esc(x.recordDate)+'</td><td class="p-2">'+esc(x.section)+'</td><td class="p-2">'+esc(x.machine)+'</td><td class="p-2">'+esc(x.operatorName)+'</td><td class="p-2 text-center">'+x.childCount+'</td><td class="p-2 text-center"><button type="button" onclick="loadIqcForEdit(\''+esc(x.parentId)+'\')" class="bg-amber-500 text-white px-3 py-1 rounded">✏️ แก้ไข</button></td></tr>').join('')+'</tbody></table></div>';}).withFailureHandler(e=>box.innerHTML='<div class="text-red-500">'+esc(e)+'</div>').getIqcRecordsForEdit(f);}
+        function resetIqcEditSearch(){['iqcEditStartDate','iqcEditEndDate','iqcEditMachine','iqcEditKeyword'].forEach(id=>document.getElementById(id).value='');document.getElementById('iqcEditSection').value='';document.getElementById('iqcEditResults').classList.add('hidden');}
+        function loadIqcForEdit(id){Swal.fire({title:'กำลังโหลดข้อมูล IQC...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});google.script.run.withSuccessHandler(function(r){if(r.status!=='success'){Swal.fire('ผิดพลาด',r.message,'error');return;}const x=r.data;iqcEditParentId=x.parentId;setIqcEditMode(true);document.getElementById('operatorId').value=x.operatorId;document.getElementById('operatorName').value=x.operatorName;document.getElementById('recordDate').value=x.recordDate;document.getElementById('shift').value=x.shift;document.getElementById('section').value=x.section;setSelectValue(document.getElementById('machine'),x.machine);document.getElementById('childItemsContainer').innerHTML='';childCount=0;(x.children||[]).forEach(c=>{addChildItem();const card=document.getElementById('child-'+childCount);setSelectValue(card.querySelector('select[name="testItem[]"]'),c.testItem);card.querySelector('input[name="numControl[]"]').value=c.numControl;setRadio(card,'westgard',c.westgard);setRadio(card,'errorType',c.errorType);setRadio(card,'reagentStatus',c.reagentStatus);setRadio(card,'controlStatus',c.controlStatus);setRadio(card,'standardStatus',c.standardStatus);setRadio(card,'instrumentStatus',c.instrumentStatus);setCheckedValues(card,'input[name^="rootCause_"]',c.rootCause);setCheckedValues(card,'input[name^="correction_"]',c.correction);setCheckedValues(card,'input[name^="result_"]',c.result);});if(!x.children.length)addChildItem();Swal.close();document.getElementById('iqcForm').scrollIntoView({behavior:'smooth'});}).withFailureHandler(e=>Swal.fire('ผิดพลาด',String(e),'error')).getIqcRecordForEdit(id);}
+        function searchEqaForEdit(){const box=document.getElementById('eqaEditResults');box.classList.remove('hidden');box.innerHTML='<div class="text-sm text-gray-500 py-3">กำลังค้นหา...</div>';const f={startDate:document.getElementById('eqaEditStartDate').value,endDate:document.getElementById('eqaEditEndDate').value,program:document.getElementById('eqaEditProgram').value,keyword:document.getElementById('eqaEditKeyword').value};google.script.run.withSuccessHandler(function(r){if(r.status!=='success'){box.innerHTML='<div class="text-red-500">'+esc(r.message)+'</div>';return;}if(!r.data.length){box.innerHTML='<div class="text-gray-500 py-3">ไม่พบข้อมูล</div>';return;}box.innerHTML='<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-blue-50"><tr><th class="p-2">วันที่</th><th class="p-2">Program</th><th class="p-2">Trial</th><th class="p-2">ผู้ทบทวน</th><th class="p-2">ผ่าน/ทั้งหมด</th><th class="p-2">จัดการ</th></tr></thead><tbody>'+r.data.map(x=>'<tr class="border-b"><td class="p-2">'+esc(x.reviewDate)+'</td><td class="p-2">'+esc(x.program)+'</td><td class="p-2">'+esc(x.trialNumber)+'</td><td class="p-2">'+esc(x.reviewerName)+'</td><td class="p-2 text-center">'+x.passedItems+'/'+x.totalItems+'</td><td class="p-2 text-center"><button type="button" onclick="loadEqaForEdit(\''+esc(x.parentId)+'\')" class="bg-amber-500 text-white px-3 py-1 rounded">✏️ แก้ไข</button></td></tr>').join('')+'</tbody></table></div>';}).withFailureHandler(e=>box.innerHTML='<div class="text-red-500">'+esc(e)+'</div>').getEqaRecordsForEdit(f);}
+        function resetEqaEditSearch(){['eqaEditStartDate','eqaEditEndDate','eqaEditKeyword'].forEach(id=>document.getElementById(id).value='');document.getElementById('eqaEditProgram').value='';document.getElementById('eqaEditResults').classList.add('hidden');}
+        function loadEqaForEdit(id){Swal.fire({title:'กำลังโหลดข้อมูล EQA...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});google.script.run.withSuccessHandler(function(r){if(r.status!=='success'){Swal.fire('ผิดพลาด',r.message,'error');return;}const x=r.data;eqaEditParentId=x.parentId;eqaEditAttachment=x.attachment||{};setEqaEditMode(true);document.getElementById('eqaReviewDate').value=x.reviewDate;document.getElementById('eqaReviewerId').value=x.reviewerId;document.getElementById('eqaReviewerName').value=x.reviewerName;document.getElementById('eqaProgram').value=x.program;document.getElementById('eqaTrialNumber').value=x.trialNumber;document.getElementById('eqaTestDate').value=x.testDate;document.getElementById('eqaTotalItems').value=x.totalItems;document.getElementById('eqaPassedItems').value=x.passedItems;document.getElementById('eqaHeadId').value=x.headId==='-'?'':x.headId;document.getElementById('eqaHeadName').value=x.headName==='-'?'':x.headName;document.getElementById('eqaHeadAckDate').value=x.headAckDate==='-'?'':x.headAckDate;document.getElementById('eqaFile').value='';document.getElementById('eqaChildItemsContainer').innerHTML='';eqaChildCount=0;(x.children||[]).forEach(c=>{addEqaChildItem();const card=document.getElementById('eqa-child-'+eqaChildCount);const t=Array.from(card.querySelectorAll('input[name^="eqaTestNopass_"]')).find(el=>el.value===c.testNopass);if(t)t.checked=true;card.querySelector('input[name="eqaTrendHistory[]"]').value=c.trendHistory;setCheckedValues(card,'input[name^="eqaDocProblem_"]',c.docProblem);setCheckedValues(card,'input[name^="eqaPrepProblem_"]',c.prepProblem);setCheckedValues(card,'input[name^="eqaIqcReview_"]',c.iqcReview);setRadio(card,'eqaTrendMatch',c.trendMatch);setRadio(card,'eqaDilution',c.dilution);setRadio(card,'eqaProbAmount',c.probAmount);setRadio(card,'eqaImpact',c.impact);setRadio(card,'eqaConclusion',c.conclusion);card.querySelector('textarea[name="eqaCorrection[]"]').value=c.correction;});validateEqaItems();if(!x.children.length&&x.totalItems>x.passedItems)addEqaChildItem();Swal.close();document.getElementById('eqaForm').scrollIntoView({behavior:'smooth'});}).withFailureHandler(e=>Swal.fire('ผิดพลาด',String(e),'error')).getEqaRecordForEdit(id);}
+
+        function loadEqaPassRateSummary() {
+          const startDate = document.getElementById('eqaSummaryStartDate').value;
+          const endDate = document.getElementById('eqaSummaryEndDate').value;
+
+          google.script.run
+            .withSuccessHandler(renderEqaPassRateSummary)
+            .withFailureHandler(function(error) {
+              console.error('โหลดสรุป EQA ไม่สำเร็จ:', error);
+              alert('ไม่สามารถโหลดสรุปผล EQA ได้');
+            })
+            .getEqaPassRateSummary(startDate, endDate);
+        }
+
+        function renderEqaPassRateSummary(res) {
+          if (!res || res.status !== 'success') {
+            alert(res ? res.message : 'ไม่พบข้อมูลสรุป EQA');
+            return;
+          }
+
+          document.getElementById('eqaOverallPassRate').textContent =
+            res.overall.passRate.toFixed(2) + '%';
+          document.getElementById('eqaOverallPassedItems').textContent =
+            res.overall.passedItems;
+          document.getElementById('eqaOverallTotalItems').textContent =
+            res.overall.totalItems;
+
+          const tbody = document.getElementById('eqaPassRateTableBody');
+          tbody.innerHTML = '';
+
+          if (!res.byProgram.length) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="4" class="text-center text-gray-500 py-6">
+                  ไม่พบข้อมูลในช่วงเวลาที่เลือก
+                </td>
+              </tr>`;
+          } else {
+            res.byProgram.forEach(function(item) {
+              tbody.innerHTML += `
+                <tr class="border-b border-gray-100">
+                  <td class="px-4 py-3 text-blue-700 font-medium">${item.program}</td>
+                  <td class="px-4 py-3 text-center">${item.passedItems}</td>
+                  <td class="px-4 py-3 text-center">${item.totalItems}</td>
+                  <td class="px-4 py-3 text-center font-bold text-green-600">
+                    ${item.passRate.toFixed(2)}%
+                  </td>
+                </tr>`;
+            });
+          }
+
+          const ctx = document.getElementById('eqaPassRateChart').getContext('2d');
+
+          if (eqaPassRateChartInstance) {
+            eqaPassRateChartInstance.destroy();
+          }
+
+          eqaPassRateChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: res.byProgram.map(item => item.program),
+              datasets: [{
+                label: 'ร้อยละผ่านเกณฑ์',
+                data: res.byProgram.map(item => item.passRate),
+                backgroundColor: '#2563eb',
+                borderRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  ticks: {
+                    callback: value => value + '%'
+                  }
+                }
+              },
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: context => context.raw.toFixed(2) + '%'
+                  }
+                }
+              }
+            }
+          });
+        }
+
+    </script>
+</body>
+</html> 
